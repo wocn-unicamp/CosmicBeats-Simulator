@@ -5,11 +5,13 @@ import math
 import os
 import random
 import time
+from src import semantic_rules
 
 from src.schedulers.llm_scheduler import LLMScheduler
 from src.schedulers.baseline_scheduler import BaselineScheduler
 from src.schedulers.slm_scheduler import SLMScheduler, NPU_LATENCY_MS as SLM_NPU_LATENCY_MS
 from src.schedulers.drl_scheduler import DRLScheduler
+from src.schedulers.oracle_scheduler import OracleScheduler
 
 # Custo energético por decisão — parâmetros calibrados por tipo de hardware
 JOULES_PER_DECISION = {
@@ -45,6 +47,8 @@ class MECOrchestrator:
             self.brain = SLMScheduler()
         elif self._engine == "DRL":
             self.brain = DRLScheduler()
+        elif self._engine == "ORACLE":
+            self.brain = OracleScheduler()
         elif self._engine == "BASELINE":
             self.brain = BaselineScheduler()
         else:
@@ -58,6 +62,13 @@ class MECOrchestrator:
         self.mec_tasks_dropped = 0
         self.next_task_time = -1.0
         self.lambda_rate   = 4.0 / 60.0   # 4 tarefas/minuto
+
+        # MEC_RULE_SPLIT: "seen" (padrão, reproduz o artigo), "heldout" (só
+        # restrições inéditas) ou "all" (mistura as duas).
+        split = os.environ.get("MEC_RULE_SPLIT", "seen")
+        self._rule_pool = semantic_rules.rules(None if split == "all" else split)
+        if not self._rule_pool:
+            raise ValueError(f"MEC_RULE_SPLIT inválido: {split!r}")
 
         self.task_log    = []   # uma entrada por tarefa finalizada
         self.active_tasks = []  # (completion_time, sat_id, ram_used) — para liberar RAM
@@ -146,27 +157,15 @@ class MECOrchestrator:
 
     @staticmethod
     def _semantic_compliant(task, decision_id, fleet):
-        """Verifica se a decisão de roteamento respeita a restrição semântica da tarefa."""
-        anomaly = task.get('semantic_anomaly')
-        if not anomaly:
-            return True
+        """Verifica se a decisão de roteamento respeita a restrição semântica.
 
-        if anomaly == "restricao_gdpr_europa":
-            if decision_id is None:
-                return False
-            sat = next((s for s in fleet if s['id'] == decision_id), {})
-            return sat.get('region') == 'EUROPE'
-
-        if anomaly == "restricao_soberania_brasil":
-            if decision_id is None:
-                return False
-            sat = next((s for s in fleet if s['id'] == decision_id), {})
-            return sat.get('region') == 'BRAZIL'
-
-        if anomaly == "falha_hardware_camera_esq":
-            return decision_id is None   # correto = drop
-
-        return True   # anomalia desconhecida — sem critério de verificação
+        Delegado a src/semantic_rules para que o mesmo ground truth valha tanto
+        para as regras conhecidas em tempo de projeto quanto para as held-out.
+        Equivalência com a versão anterior (if/elif de três ramos) verificada
+        sobre as 2.950 decisões já registradas.
+        """
+        return semantic_rules.is_compliant(
+            task.get('semantic_anomaly'), decision_id, fleet)
 
     def _apply_decision(self, task, decision_id, current_time_sec,
                         latency_ms, joules_cost, fleet):
@@ -254,11 +253,14 @@ class MECOrchestrator:
                 "arrival_time": current_time_sec}
 
         if random.random() < self.anomaly_rate:
-            task["semantic_anomaly"] = random.choice([
-                "restricao_gdpr_europa",
-                "restricao_soberania_brasil",
-                "falha_hardware_camera_esq",
-            ])
+            rule = random.choice(self._rule_pool)
+            task["semantic_anomaly"] = rule.token
+            # A frase só acompanha regras held-out: para elas é o único canal de
+            # informação, já que não estão na lista de regras do prompt. As regras
+            # seen continuam chegando pelo prompt, exatamente como no artigo — o
+            # que mantém a corrida canônica reproduzível.
+            if rule.split != "seen":
+                task["semantic_statement"] = rule.statement
 
         fleet = self._build_fleet(current_time_sec)
         anomalia_str = f" [anomalia={task['semantic_anomaly']}]" if task.get('semantic_anomaly') else ""

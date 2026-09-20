@@ -19,7 +19,7 @@ You are a centralized satellite network orchestrator managing a Low-Earth-Orbit 
 Inter-satellite links (ISL) are always available — connectivity is never the bottleneck.
 Output ONLY valid JSON — no markdown, no explanation.
 
-TASK: id={task_id}, region={region}, ram={ram} MB, anomaly="{anomaly}"
+TASK: id={task_id}, region={region}, ram={ram} MB, anomaly="{anomaly}"{constraint}
 
 AVAILABLE SATELLITES:
 {fleet_lines}
@@ -80,6 +80,10 @@ class LLMScheduler:
             region=task_dict.get("region", "?"),
             ram=task_dict.get("ram", 0),
             anomaly=task_dict.get("semantic_anomaly", "none"),
+            # Para uma restricao fora da lista de regras acima, esta frase e a
+            # unica informacao que o modelo recebe sobre o que ela exige.
+            constraint=("\n  constraint: " + task_dict["semantic_statement"]
+                        if task_dict.get("semantic_statement") else ""),
             fleet_lines=fleet_lines,
         )
 

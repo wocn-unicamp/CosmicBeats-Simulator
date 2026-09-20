@@ -18,8 +18,8 @@ if __name__ == "__main__":
     
     # Argumento 1: O Motor (com opções restritas para evitar erros de digitação)
     parser.add_argument('--engine', type=str, default="LLM", 
-                        choices=["LLM", "BASELINE", "SLM", "DRL"], 
-                        help="Escolha o cérebro: LLM, BASELINE, SLM, ou DRL")
+                        choices=["LLM", "BASELINE", "SLM", "DRL", "ORACLE"], 
+                        help="Escolha o cérebro: LLM, BASELINE, SLM, DRL ou ORACLE")
     
     # Argumento 2: O arquivo de configuração JSON
     parser.add_argument('--config', type=str, default="configs/config.json", 
@@ -33,6 +33,12 @@ if __name__ == "__main__":
 
     # Argumento 4: Onde gravar as metricas. Sem isso cada execucao sobrescreve
     # a anterior, o que inviabiliza rodar varias sementes.
+    # Argumento 5: qual conjunto de restricoes semanticas usar. "seen" reproduz
+    # o artigo; "heldout" usa restricoes que nenhum motor viu em tempo de projeto.
+    parser.add_argument('--rule-split', type=str, default="seen",
+                        choices=["seen", "heldout", "all"],
+                        help="Conjunto de restricoes semanticas (default: seen)")
+
     parser.add_argument('--outdir', type=str, default="logs",
                         help="Diretorio de saida das metricas (default: logs)")
 
@@ -48,6 +54,7 @@ if __name__ == "__main__":
     os.environ["MEC_ENGINE"] = args.engine
     os.environ["MEC_SEED"]   = str(args.seed)
     os.environ["MEC_OUTDIR"] = args.outdir
+    os.environ["MEC_RULE_SPLIT"] = args.rule_split
     
     print("\n" + "="*50)
     print(f"🚀 INICIANDO COSMICBEATS")
@@ -55,6 +62,7 @@ if __name__ == "__main__":
     print(f"📂 Arquivo Config  : {args.config}")
     print(f"🎲 Semente         : {args.seed}")
     print(f"💾 Saída           : {args.outdir}")
+    print(f"📜 Regras          : {args.rule_split}")
     print("="*50 + "\n")
 
     _sim = Simulator(args.config)

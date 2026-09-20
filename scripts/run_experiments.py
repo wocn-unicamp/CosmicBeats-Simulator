@@ -34,7 +34,7 @@ import sys
 import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LOCAL_ENGINES = ["BASELINE", "DRL"]          # deterministicos, sem rede
+LOCAL_ENGINES = ["BASELINE", "ORACLE", "DRL"]          # deterministicos, sem rede
 API_ENGINES = ["SLM", "LLM"]                 # consomem cota da API Gemini
 ALL_ENGINES = LOCAL_ENGINES + API_ENGINES
 
