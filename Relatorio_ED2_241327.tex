@@ -204,10 +204,12 @@ throughput alone. This paper fills that gap with the following contributions:
     paradigm comparison under identical orbital conditions.
   \item A DRL agent trained with SB3 DQN over 50{,}000 synthetic steps using
     hidden-anomaly reward shaping, reaching 37.5\% anomaly compliance without
-    observing semantic rule types. We show analytically that this is the
-    information-theoretic maximum for a binary-flag observation space---only
-    the mandatory-discard cases are identifiable from one bit---so the figure
-    bounds \emph{this observation space}, not DRL as a paradigm.
+    observing semantic rule types. We show analytically that the maximum for a
+    binary-flag observation space is the share of anomalies that are
+    mandatory discards---only those are identifiable from one bit---and verify
+    over 20 seeds that the agent saturates it (29.0\% against a 28.3\%
+    ceiling). The limit is therefore the observation space, not DRL as a
+    paradigm nor the training budget.
   \item A characterisation of the compliance-vs-efficiency trade-off, reported
     with paired significance tests and interval estimates: the LLM resolved all
     semantic constraints presented to it, at an energy cost per decision that
@@ -694,6 +696,23 @@ The contrast the abstract states---semantic-reasoning engine versus numerical
 heuristic---is the one the evidence supports. Pooling 10--20 seeds
 (80--160 anomaly-carrying tasks) would narrow the ACR intervals to
 $\pm5$--$7$~pp and resolve the rest.
+
+\paragraph*{Multi-seed replication}
+We ran that replication for the two deterministic engines: 20 independent
+seeds, 1{,}337 paired tasks, 138 anomaly-carrying. (The language-model engines
+issue one API call per task and their replication is bounded by provider quota;
+it is in progress.) Across seeds BASELINE reaches 26.8\% ACR (Wilson 95\%~CI
+20.1--34.8) and DRL 29.0\% (22.1--37.0), with the paired difference
+statistically null (McNemar $p=0.818$). The single-run DRL advantage over
+BASELINE therefore \emph{does not replicate}, confirming the caution above.
+What does replicate, and more sharply, is the information-theoretic argument.
+The ceiling for any blind fallback equals the share of anomalies that are
+mandatory-discard hardware failures---37.5\% (3 of 8) in the single run and
+28.3\% (39 of 138) in the pooled sample---and DRL lands on it in both cases,
+recovering 3 and 40 tasks respectively. The ceiling is thus a property of the
+anomaly mix rather than a fixed constant, and the agent saturates it: the
+binding limitation is the observation space, exactly as claimed, and not the
+amount of training.
 
 The per-anomaly breakdown of the 8 constrained tasks (3~hardware-failure,
 3~GDPR, 2~data-sovereignty) makes the compliance ceilings concrete. The
