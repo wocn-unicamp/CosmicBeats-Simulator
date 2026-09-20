@@ -60,22 +60,33 @@ def wilson_ci(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
     return (max(0.0, centre - half), min(1.0, centre + half))
 
 
+def _log_binom_pmf(i: int, n: int, p: float) -> float:
+    """log P(X = i). Em espaco logaritmico porque com n na casa do milhar
+    C(n,i) estoura o float muito antes de ser multiplicado por p**i."""
+    if p <= 0.0:
+        return 0.0 if i == 0 else -math.inf
+    if p >= 1.0:
+        return 0.0 if i == n else -math.inf
+    log_c = (math.lgamma(n + 1) - math.lgamma(i + 1) - math.lgamma(n - i + 1))
+    return log_c + i * math.log(p) + (n - i) * math.log1p(-p)
+
+
 def _binom_sf(k: int, n: int, p: float) -> float:
-    """P(X >= k) para X ~ Binomial(n, p), soma exata."""
+    """P(X >= k) para X ~ Binomial(n, p)."""
     if k <= 0:
         return 1.0
     if k > n:
         return 0.0
-    return sum(math.comb(n, i) * p**i * (1 - p) ** (n - i) for i in range(k, n + 1))
+    return sum(math.exp(_log_binom_pmf(i, n, p)) for i in range(k, n + 1))
 
 
 def _binom_cdf(k: int, n: int, p: float) -> float:
-    """P(X <= k) para X ~ Binomial(n, p), soma exata."""
+    """P(X <= k) para X ~ Binomial(n, p)."""
     if k < 0:
         return 0.0
     if k >= n:
         return 1.0
-    return sum(math.comb(n, i) * p**i * (1 - p) ** (n - i) for i in range(0, k + 1))
+    return sum(math.exp(_log_binom_pmf(i, n, p)) for i in range(0, k + 1))
 
 
 def _bisect(fn, target: float, lo: float = 0.0, hi: float = 1.0, iters: int = 200) -> float:

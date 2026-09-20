@@ -10,8 +10,6 @@ import argparse  # <-- A biblioteca mágica para terminais
 from src.sim.simulator import Simulator
 
 if __name__ == "__main__":
-    # Semente fixa: Garante que os mesmos eventos acontecem para TODOS os motores
-    random.seed(0) 
     
     # =================================================================
     # CONFIGURAÇÃO DO TERMINAL (CLI)
@@ -26,18 +24,37 @@ if __name__ == "__main__":
     # Argumento 2: O arquivo de configuração JSON
     parser.add_argument('--config', type=str, default="configs/config.json", 
                         help="Caminho para o arquivo config.json")
-    
+
+    # Argumento 3: A semente. Todos os motores precisam receber a MESMA semente
+    # para que vejam a mesma sequencia de tarefas — e o pareamento entre eles
+    # e justamente o que da poder estatistico na analise.
+    parser.add_argument('--seed', type=int, default=0,
+                        help="Semente do gerador de numeros aleatorios (default: 0)")
+
+    # Argumento 4: Onde gravar as metricas. Sem isso cada execucao sobrescreve
+    # a anterior, o que inviabiliza rodar varias sementes.
+    parser.add_argument('--outdir', type=str, default="logs",
+                        help="Diretorio de saida das metricas (default: logs)")
+
     args = parser.parse_args()
+
+    # A semente precisa ser aplicada antes de qualquer coisa: as chegadas
+    # Poisson, as regioes e as anomalias saem todas do modulo random global.
+    random.seed(args.seed)
 
     # =================================================================
     # INJEÇÃO DA CHAVE SELETORA
     # =================================================================
     os.environ["MEC_ENGINE"] = args.engine
+    os.environ["MEC_SEED"]   = str(args.seed)
+    os.environ["MEC_OUTDIR"] = args.outdir
     
     print("\n" + "="*50)
     print(f"🚀 INICIANDO COSMICBEATS")
     print(f"🧠 Motor Cognitivo : {args.engine}")
     print(f"📂 Arquivo Config  : {args.config}")
+    print(f"🎲 Semente         : {args.seed}")
+    print(f"💾 Saída           : {args.outdir}")
     print("="*50 + "\n")
 
     _sim = Simulator(args.config)

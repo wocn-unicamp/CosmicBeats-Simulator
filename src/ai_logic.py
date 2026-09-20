@@ -337,10 +337,11 @@ class MECOrchestrator:
         print("=" * 44 + "\n")
 
     def save_metrics(self):
-        os.makedirs("logs", exist_ok=True)
+        outdir = os.environ.get("MEC_OUTDIR", "logs")
+        os.makedirs(outdir, exist_ok=True)
         engine = self._engine
 
-        csv_path   = f"logs/mec_metrics_{engine}.csv"
+        csv_path   = os.path.join(outdir, f"mec_metrics_{engine}.csv")
         fieldnames = [
             "task_id", "region", "anomaly",
             "arrival_time_s", "decision_time_s", "latency_ms",
@@ -404,7 +405,7 @@ class MECOrchestrator:
                     getattr(s, 'mec_battery_soc_pct', 0.0), 1
                 )
 
-        json_path = f"logs/mec_summary_{engine}.json"
+        json_path = os.path.join(outdir, f"mec_summary_{engine}.json")
         with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(summary, f, indent=2)
 

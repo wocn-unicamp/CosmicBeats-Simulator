@@ -1,0 +1,424 @@
+{
+  "runs": [
+    {
+      "seed": 0,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 69,
+      "finished_at": "2026-09-20T00:17:42",
+      "tail": null
+    },
+    {
+      "seed": 0,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 69,
+      "finished_at": "2026-09-20T00:17:47",
+      "tail": null
+    },
+    {
+      "seed": 1,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.0,
+      "total_tasks": 58,
+      "finished_at": "2026-09-20T00:17:48",
+      "tail": null
+    },
+    {
+      "seed": 1,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 58,
+      "finished_at": "2026-09-20T00:17:53",
+      "tail": null
+    },
+    {
+      "seed": 2,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 71,
+      "finished_at": "2026-09-20T00:17:54",
+      "tail": null
+    },
+    {
+      "seed": 2,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 71,
+      "finished_at": "2026-09-20T00:18:00",
+      "tail": null
+    },
+    {
+      "seed": 3,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 61,
+      "finished_at": "2026-09-20T00:18:01",
+      "tail": null
+    },
+    {
+      "seed": 3,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.2,
+      "total_tasks": 61,
+      "finished_at": "2026-09-20T00:18:06",
+      "tail": null
+    },
+    {
+      "seed": 2,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.4,
+      "total_tasks": 71,
+      "finished_at": "2026-09-20T00:18:20",
+      "tail": null
+    },
+    {
+      "seed": 3,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 61,
+      "finished_at": "2026-09-20T00:18:25",
+      "tail": null
+    },
+    {
+      "seed": 4,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 67,
+      "finished_at": "2026-09-20T00:18:48",
+      "tail": null
+    },
+    {
+      "seed": 4,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 67,
+      "finished_at": "2026-09-20T00:18:54",
+      "tail": null
+    },
+    {
+      "seed": 5,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.2,
+      "total_tasks": 66,
+      "finished_at": "2026-09-20T00:18:55",
+      "tail": null
+    },
+    {
+      "seed": 5,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.4,
+      "total_tasks": 66,
+      "finished_at": "2026-09-20T00:19:00",
+      "tail": null
+    },
+    {
+      "seed": 6,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 60,
+      "finished_at": "2026-09-20T00:19:01",
+      "tail": null
+    },
+    {
+      "seed": 6,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.2,
+      "total_tasks": 60,
+      "finished_at": "2026-09-20T00:19:07",
+      "tail": null
+    },
+    {
+      "seed": 7,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 78,
+      "finished_at": "2026-09-20T00:19:08",
+      "tail": null
+    },
+    {
+      "seed": 7,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.2,
+      "total_tasks": 78,
+      "finished_at": "2026-09-20T00:19:13",
+      "tail": null
+    },
+    {
+      "seed": 8,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 67,
+      "finished_at": "2026-09-20T00:19:14",
+      "tail": null
+    },
+    {
+      "seed": 8,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.4,
+      "total_tasks": 67,
+      "finished_at": "2026-09-20T00:19:19",
+      "tail": null
+    },
+    {
+      "seed": 9,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 69,
+      "finished_at": "2026-09-20T00:19:20",
+      "tail": null
+    },
+    {
+      "seed": 9,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 69,
+      "finished_at": "2026-09-20T00:19:26",
+      "tail": null
+    },
+    {
+      "seed": 10,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.0,
+      "total_tasks": 52,
+      "finished_at": "2026-09-20T00:19:27",
+      "tail": null
+    },
+    {
+      "seed": 10,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 52,
+      "finished_at": "2026-09-20T00:19:32",
+      "tail": null
+    },
+    {
+      "seed": 11,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.0,
+      "total_tasks": 71,
+      "finished_at": "2026-09-20T00:19:33",
+      "tail": null
+    },
+    {
+      "seed": 11,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.2,
+      "total_tasks": 71,
+      "finished_at": "2026-09-20T00:19:38",
+      "tail": null
+    },
+    {
+      "seed": 12,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 65,
+      "finished_at": "2026-09-20T00:19:39",
+      "tail": null
+    },
+    {
+      "seed": 12,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 65,
+      "finished_at": "2026-09-20T00:19:45",
+      "tail": null
+    },
+    {
+      "seed": 13,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 73,
+      "finished_at": "2026-09-20T00:19:46",
+      "tail": null
+    },
+    {
+      "seed": 13,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 73,
+      "finished_at": "2026-09-20T00:19:51",
+      "tail": null
+    },
+    {
+      "seed": 14,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 68,
+      "finished_at": "2026-09-20T00:19:52",
+      "tail": null
+    },
+    {
+      "seed": 14,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.4,
+      "total_tasks": 68,
+      "finished_at": "2026-09-20T00:19:58",
+      "tail": null
+    },
+    {
+      "seed": 15,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 55,
+      "finished_at": "2026-09-20T00:19:59",
+      "tail": null
+    },
+    {
+      "seed": 15,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.4,
+      "total_tasks": 55,
+      "finished_at": "2026-09-20T00:20:04",
+      "tail": null
+    },
+    {
+      "seed": 16,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 76,
+      "finished_at": "2026-09-20T00:20:05",
+      "tail": null
+    },
+    {
+      "seed": 16,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.5,
+      "total_tasks": 76,
+      "finished_at": "2026-09-20T00:20:11",
+      "tail": null
+    },
+    {
+      "seed": 17,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 63,
+      "finished_at": "2026-09-20T00:20:12",
+      "tail": null
+    },
+    {
+      "seed": 17,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.6,
+      "total_tasks": 63,
+      "finished_at": "2026-09-20T00:20:17",
+      "tail": null
+    },
+    {
+      "seed": 18,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.1,
+      "total_tasks": 72,
+      "finished_at": "2026-09-20T00:20:18",
+      "tail": null
+    },
+    {
+      "seed": 18,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 6.0,
+      "total_tasks": 72,
+      "finished_at": "2026-09-20T00:20:24",
+      "tail": null
+    },
+    {
+      "seed": 19,
+      "engine": "BASELINE",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1.4,
+      "total_tasks": 76,
+      "finished_at": "2026-09-20T00:20:26",
+      "tail": null
+    },
+    {
+      "seed": 19,
+      "engine": "DRL",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 76,
+      "finished_at": "2026-09-20T00:20:31",
+      "tail": null
+    }
+  ]
+}

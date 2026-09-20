@@ -42,8 +42,10 @@ class DRLScheduler:
                 "Run: python scripts/train_drl.py"
             )
         self.model = DQN.load(path)
-        random.seed(0)  # DQN.load() reseeds the global RNG via SB3's set_random_seed,
-        # shifting the Poisson arrival sequence — restore the canonical seed here.
+        # DQN.load() reseeds the global RNG via SB3's set_random_seed, which would
+        # shift the Poisson arrival sequence. Restore THIS run's seed (not a fixed
+        # 0), otherwise every seed would collapse onto the same task stream.
+        random.seed(int(os.environ.get("MEC_SEED", "0")))
         print(f">>> [ENGINE] DRL Scheduler Initialized (SB3-DQN | {path})")
         self._step = 0
 
