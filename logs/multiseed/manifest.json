@@ -419,6 +419,16 @@
       "total_tasks": 76,
       "finished_at": "2026-09-20T00:20:31",
       "tail": null
+    },
+    {
+      "seed": 0,
+      "engine": "SLM",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 978.9,
+      "total_tasks": 69,
+      "finished_at": "2026-09-20T00:44:16",
+      "tail": null
     }
   ]
 }
