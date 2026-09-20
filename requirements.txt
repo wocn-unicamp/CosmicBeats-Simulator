@@ -43,7 +43,7 @@ markdown-it-py==4.0.0
 MarkupSafe==3.0.3
 mdurl==0.1.2
 narwhals==2.10.2
-numpy
+numpy==2.2.6
 orjson==3.11.4
 packaging==25.0
 pandas==2.3.3
@@ -71,7 +71,7 @@ rich==14.2.0
 rsa==4.9.1
 ruff==0.14.4
 safehttpx==0.1.7
-scipy
+scipy==1.15.3
 semantic-version==2.10.0
 sgp4==2.25
 shellingham==1.5.4
@@ -93,3 +93,15 @@ uritemplate==4.2.0
 urllib3==2.5.0
 uvicorn==0.38.0
 websockets==15.0.1
+
+# A build +cpu do torch vive no indice proprio do PyTorch; sem esta linha
+# um 'pip install -r requirements.txt' falha ao resolver a versao local.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# Reinforcement learning (motor DRL) — ausentes ate entao, o que impedia
+# reproduzir qualquer execucao do DRL a partir deste arquivo.
+# sympy e dependencia de torch e estava com instalacao incompleta no venv.
+stable-baselines3==2.9.0
+gymnasium==1.3.0
+torch==2.12.0+cpu
+sympy==1.14.0

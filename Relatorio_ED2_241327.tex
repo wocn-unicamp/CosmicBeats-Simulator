@@ -1,4 +1,5 @@
 \documentclass[conference,comsoc,twoside,caption=false]{IEEEtran}
+\usepackage[T1]{fontenc}
 \usepackage{newtxtext,newtxmath}
 \ifCLASSOPTIONcompsoc
   \usepackage[caption=false,font=footnotesize,labelfont=sf,textfont=sf]{subfig}
@@ -14,6 +15,21 @@
 \usepackage[utf8]{inputenc}
 \usepackage{ragged2e}
 \usepackage{graphicx}
+\usepackage{listings}
+\lstdefinestyle{promptstyle}{%
+  basicstyle=\ttfamily\scriptsize,
+  frame=single,
+  framesep=3pt,
+  breaklines=true,
+  breakindent=0pt,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  aboveskip=2pt,
+  belowskip=2pt,
+  xleftmargin=3pt,
+  xrightmargin=3pt,
+}
 \usepackage{tabulary}
 \usepackage{booktabs}
 \usepackage{mathtools}
@@ -61,6 +77,14 @@
 \acrodef{ISL}{Inter-Satellite Link}
 \acrodef{IoT}{Internet of Things}
 \acrodef{KPI}{Key Performance Indicator}
+\acrodef{NPU}{Neural Processing Unit}
+\acrodef{MLP}{Multi-Layer Perceptron}
+\acrodef{GDPR}{General Data Protection Regulation}
+\acrodef{RAM}{Random-Access Memory}
+\acrodef{API}{Application Programming Interface}
+\acrodef{CI}{Confidence Interval}
+\acrodef{IQR}{Interquartile Range}
+\acrodef{RAPL}{Running Average Power Limit}
 
 \hyphenation{al-go-rithm allows op-tical net-works semi-conduc-tor ubi-quitous
 energy expe-riments satel-lite con-stel-lation orches-tration se-mantic
@@ -68,12 +92,11 @@ com-pliance}
 
 \begin{document}
 \author{
-\IEEEauthorblockN{Octávio B. Nascimento and Carlos A. Astudillo}
+\IEEEauthorblockN{Oct\'{a}vio B. Nascimento and Carlos A. Astudillo}
 \IEEEauthorblockA{%
 Institute of Computing, State University of Campinas (UNICAMP),
 Campinas, SP, 13083-852, Brazil\\
-Emails: o241327@dac.unicamp.br, castudillo@unicamp.br\\
-Code: \url{https://github.com/wocn-unicamp/CosmicBeats-Simulator}}
+Emails: o241327@dac.unicamp.br, castudillo@unicamp.br}
 }
 \title{\huge Semantic Task Orchestration in LEO-NTN\\
 Multi-Access Edge Computing:
@@ -92,22 +115,25 @@ A Comparative Study}
     \addtolength{\footskip}{0\baselineskip}
     \addtolength{\textheight}{-0.1\baselineskip}
 \begin{abstract}
-\ac{NTN} \ac{MEC} over \ac{LEO} constellations introduces extreme constraints
-on task orchestration: tight energy budgets driven by orbital eclipses,
+\ac{MEC} over \ac{LEO} constellations introduces extreme constraints on task orchestration, including tight energy budgets driven by orbital eclipses, high-dynamic system topology, 
 millisecond-range decision windows, and heterogeneous computing payloads.
 Beyond classical resource management, real-world tasks increasingly carry
-\emph{semantic constraints}---data sovereignty laws, privacy regulations,
-hardware-failure protocols---that pure numerical optimizers cannot interpret.
+\emph{semantic constraints} that pure numerical optimizers cannot interpret, including data sovereignty laws, privacy regulations, and
+hardware-failure protocols. 
 This work presents a controlled comparative simulation of four orchestration
 paradigms over the same 1{,}200-second scenario and identical 69-task workload:
 (i)~a greedy heuristic baseline, (ii)~a \ac{DRL} agent (SB3 DQN,
-50{,}000~training episodes), (iii)~a \ac{SLM} simulating on-device NPU
+50{,}000~training steps), (iii)~a \ac{SLM} simulating on-device \ac{NPU}
 inference (Gemma~4 26B, \SI{50}{\milli\second} benchmark latency), and
-(iv)~a \ac{LLM} cloud orchestrator (Gemini~3.1 Flash~Lite). Results show that
-the LLM achieves 100\% semantic and anomaly compliance---versus 25\% for the
-heuristic baseline---at a cost of 5{,}000$\times$ higher energy per decision,
-empirically quantifying the compliance-vs-efficiency trade-off for NTN-MEC
-system designers.
+(iv)~a \ac{LLM} cloud orchestrator (Gemini~3.1 Flash~Lite). On this workload the LLM attains
+full semantic and anomaly compliance (69/69 and 8/8; Wilson 95\%~CI
+94.7--100\% and 67.6--100\%) against 25\% anomaly compliance for the heuristic
+baseline---under an exact paired McNemar test the only pairwise difference
+reaching significance ($p=0.031$), the remaining orderings being
+indistinguishable at $n=8$. Under an explicitly declared energy model (a model,
+not a measurement) this costs three to four orders of magnitude more energy per
+decision, framing the compliance-vs-efficiency trade-off for NTN-MEC
+designers.
 \end{abstract}
 \begin{IEEEkeywords}
 NTN-MEC, LEO satellite edge computing, deep reinforcement learning,
@@ -128,7 +154,7 @@ orbital eclipse cycle~\cite{guo2024,gpp2022}.
 
 Beyond classical resource constraints, an emerging class of tasks carries
 semantic constraints derived from real-world regulations: data privacy laws
-(e.g., GDPR), national data sovereignty requirements, or hardware-level failure
+(e.g., \ac{GDPR}), national data sovereignty requirements, or hardware-level failure
 protocols. A compliant orchestrator must parse these constraints from natural
 language descriptions and map them onto routing decisions---a capability that
 pure numerical optimizers fundamentally lack.
@@ -176,15 +202,22 @@ throughput alone. This paper fills that gap with the following contributions:
   \item A multi-engine comparative simulation framework (4 paradigms,
     deterministic 1{,}200-second window, 69 identical tasks) enabling fair
     paradigm comparison under identical orbital conditions.
-  \item A DRL agent trained with SB3 DQN across 50{,}000 synthetic episodes
-    using hidden-anomaly reward shaping, achieving 37.5\% anomaly compliance
-    without observing semantic rule types---the theoretical maximum for
-    binary-flag observations.
-  \item Empirical quantification of the compliance-vs-efficiency trade-off:
-    LLM achieves 100\% semantic and anomaly compliance at 5{,}000$\times$
-    higher energy cost per decision than the heuristic baseline.
-  \item An explicit parameter provenance audit (Table~\ref{tab:params})
-    distinguishing literature-grounded premises from deliberate design choices.
+  \item A DRL agent trained with SB3 DQN over 50{,}000 synthetic steps using
+    hidden-anomaly reward shaping, reaching 37.5\% anomaly compliance without
+    observing semantic rule types. We show analytically that this is the
+    information-theoretic maximum for a binary-flag observation space---only
+    the mandatory-discard cases are identifiable from one bit---so the figure
+    bounds \emph{this observation space}, not DRL as a paradigm.
+  \item A characterisation of the compliance-vs-efficiency trade-off, reported
+    with paired significance tests and interval estimates: the LLM resolved all
+    semantic constraints presented to it, at an energy cost per decision that
+    our declared model places three to four orders of magnitude above the
+    heuristic baseline. We report which pairwise contrasts the sample size does
+    and does not support.
+  \item An explicit \emph{parameter provenance audit} (Table~\ref{tab:params}):
+    every simulation parameter is labelled either as grounded in cited
+    literature or as a deliberate design choice, so that readers can separate
+    externally validated premises from modelling decisions.
 \end{enumerate}
 
 \section{System Model}
@@ -192,7 +225,7 @@ throughput alone. This paper fills that gap with the following contributions:
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=\columnwidth]{architecure-diagram.png}
+\includegraphics[width=\columnwidth]{architecture-diagram.png}
 \caption{NTN-MEC orchestration architecture. Three regional \ac{LEO}-\ac{MEC}
 nodes (Brazil, Europe, USA) receive a Poisson stream of tasks, each carrying a
 region, a RAM requirement, and an optional semantic annotation. A pluggable
@@ -223,6 +256,20 @@ carry one of three semantic constraints, assigned uniformly at random:
 (iii)~\emph{critical hardware failure} (must discard regardless of resources).
 These three rules constitute the ground-truth reference used to measure
 compliance.
+
+Concretely, a constraint is attached to a task as a short symbolic identifier
+drawn from a closed vocabulary of three tokens
+(\texttt{restricao\_gdpr\_europa}, \texttt{restricao\_soberania\_brasil},
+\texttt{falha\_hardware\_camera\_esq}). The identifiers are \emph{not} numeric
+and are never one-hot encoded for the language models: the raw token is
+interpolated verbatim into the prompt (Fig.~\ref{fig:prompt}), so SLM and LLM
+must infer the governing regulation from the string itself. The DRL agent
+instead observes only whether \emph{some} constraint is present, as a single
+binary feature. Ground truth is evaluated by a three-branch predicate mapping
+each token to its admissible decision---route to EUROPE, route to BRAZIL, or
+discard---applied identically to all four engines. We emphasise that this
+vocabulary is closed and enumerated at design time; the consequences of that
+choice are discussed in the Limitations.
 
 \subsection{Battery and Eclipse Model}
 Battery dynamics follow a physical orbital eclipse model: solar irradiance
@@ -356,7 +403,7 @@ visited by the real SimPy simulation while keeping episodes independent.
 \subsubsection*{Algorithm and training}
 We use a Deep Q-Network (DQN)~\cite{mnih2015}---a value-based, off-policy,
 model-free method---implemented in Stable Baselines3 (SB3). DQN approximates the
-action-value $Q(s,a;\theta)$ with a two-layer MLP ($64\times64$) and minimizes
+action-value $Q(s,a;\theta)$ with a two-layer \ac{MLP} ($64\times64$) and minimizes
 the temporal-difference error toward the bootstrapped target
 \begin{equation}
 y = r + \gamma \max_{a'} Q(s',a';\theta^{-}),
@@ -377,7 +424,8 @@ restoring the canonical seed immediately after loading.
 
 \begin{table}[!t]
 \centering
-\caption{DQN Agent Hyperparameters (\texttt{NTNMECEnv})}
+\caption{DQN Agent Hyperparameters for \texttt{NTNMECEnv}, the custom
+Gymnasium environment implementing the MDP of Section~\ref{sec:drl}}
 \label{tab:dqn}
 \footnotesize
 \begin{tabular}{p{4.3cm}p{3.3cm}}
@@ -420,9 +468,7 @@ before committing.
 
 \begin{figure}[!t]
 \centering
-\footnotesize
-\begin{minipage}{0.97\columnwidth}
-\begin{verbatim}
+\begin{lstlisting}[style=promptstyle]
 CONTEXT: You are an AI scheduler embedded in a
 Low-Earth-Orbit satellite (edge node). ...
 Output ONLY valid JSON - no markdown.
@@ -452,8 +498,7 @@ Output ONLY valid JSON:
 {"action": "process|route|drop",
  "target_region": "USA|BRAZIL|EUROPE|null",
  "reason": "one short sentence"}
-\end{verbatim}
-\end{minipage}
+\end{lstlisting}
 \caption{Natural-language prompt shared by the SLM and LLM engines (SLM variant
 shown). Placeholders in braces are filled per task. The LLM variant returns an
 explicit \texttt{satellite\_id} instead of an \texttt{action}/\texttt{target\_region}
@@ -491,10 +536,17 @@ but exploits the provider's native JSON mode (\texttt{responseMimeType}), so no
 chain-of-thought parsing is needed. A pre-filter skips the API call entirely
 when no satellite in the task region is above the battery threshold, saving cost
 on unavoidable drops, and transient rate-limit responses trigger a bounded
-exponential back-off. The engine pays the full ground-station round-trip
-(\SI{6112}{\milli\second} average, empirically measured), orders of magnitude
-above the on-device NPU benchmark---the concrete price of the latency-vs-context
-trade-off separating the cloud LLM from the embedded SLM.
+exponential back-off. The engine pays a full ground-station round-trip. Measured end-to-end decision
+latency has a median of \SI{955}{\milli\second} (\ac{IQR} \numrange{877}{1131}~ms).
+The arithmetic mean over the run is \SI{6112}{\milli\second}, but that mean is
+dominated by 10 of 69 calls (14\%) that exceeded \SI{10}{\second} because the
+free-tier quota triggered the client's own bounded back-off
+(\SIlist{30;60;90}{\second} sleeps on HTTP~429). Those tails measure
+\emph{provider rate limiting}, not propagation or inference, so we report the
+median as the figure characterising the engine and treat the mean as an
+artefact of the experimental tier. Even at the median, the LLM remains orders
+of magnitude above the on-device NPU benchmark---the concrete price of the
+latency-vs-context trade-off separating the cloud LLM from the embedded SLM.
 
 \section{Evaluation Metrics}
 \label{sec:metrics}
@@ -553,7 +605,7 @@ definitions follow.
 
 All four engines process the identical sequence of 69 tasks
 under the same 1{,}200-second window and random seed (controlled for fairness).
-Table~\ref{tab:kpi} summarises the complete KPI comparison.
+Table~\ref{tab:kpi} summarises the complete KPI comparison. The code to replicate the experiments can be found at \url{https://github.com/wocn-unicamp/CosmicBeats-Simulator}
 
 \begin{table}[!t]
 \centering
@@ -565,24 +617,24 @@ Table~\ref{tab:kpi} summarises the complete KPI comparison.
 \textbf{KPI} & \textbf{BASELINE} & \textbf{DRL} & \textbf{SLM} & \textbf{LLM} \\
 \midrule
 SCR (semantic compliance) &
-  91.3\% & 92.8\% &
-  97.1\% & 100.0\% \\
+  91.3 {\tiny[82.3--96.0]} & 92.8 {\tiny[84.1--96.9]} &
+  97.1 {\tiny[90.0--99.2]} & 100 {\tiny[94.7--100]} \\
 ACR (anomaly compliance) &
-  25.0\% & 37.5\% &
-  75.0\% & 100.0\% \\
+  25.0 {\tiny[7.1--59.1]} & 37.5 {\tiny[13.7--69.4]} &
+  75.0 {\tiny[40.9--92.9]} & 100 {\tiny[67.6--100]} \\
 Task execution rate &
   100.0\% & 88.4\% &
   89.9\% & 95.7\% \\
 Drop rate &
   0.0\% & 11.6\% &
   10.1\% & 4.3\% \\
-Avg.\ decision latency &
-  $\approx$0\,ms & \SI{0.475}{\milli\second} &
-  \SI{50}{\milli\second} & \SI{6112}{\milli\second} \\
-Total energy &
+Median decision latency &
+  \SI{0.014}{\milli\second} & \SI{0.438}{\milli\second} &
+  \SI{50}{\milli\second} & \SI{955}{\milli\second}$^{\ddagger}$ \\
+Total energy$^{\dagger}$ &
   \SI{0.069}{\joule} & \SI{0.345}{\joule} &
   \SI{6.9}{\joule} & \SI{345}{\joule} \\
-Energy per decision &
+Energy per decision$^{\dagger}$ &
   \SI{0.001}{\joule} & \SI{0.005}{\joule} &
   \SI{0.100}{\joule} & \SI{5.0}{\joule} \\
 Anomaly tasks (of 69) &
@@ -591,16 +643,26 @@ Anomaly tasks (of 69) &
 \bottomrule
 \end{tabular}%
 }
+
+{\scriptsize
+SCR/ACR in \%, with Wilson 95\%~CIs in brackets; the ACR intervals overlap
+widely at $n=8$ (Section~\ref{sec:compliance}).
+$^{\dagger}$~Declared model constants, not measurements
+(Section~\ref{sec:energy}).
+$^{\ddagger}$~Median; the run mean, \SI{6112}{\milli\second}, is dominated by
+rate-limit back-off on 10 of 69 calls.}
 \end{table}
 
 \subsection{Semantic Compliance}
+\label{sec:compliance}
 
 BASELINE achieves 91.3\% overall SCR but only
 25.0\% (2/8) ACR---a result of geographic
 coincidence, not semantic reasoning: the engine never observes the presence of
-a rule. DRL improves to 92.8\% SCR and
-37.5\% ACR (3/8), surpassing BASELINE on both
-metrics despite receiving only a binary \emph{anomaly-present} flag. The 37.5\%
+a rule. DRL reaches 92.8\% SCR and
+37.5\% ACR (3/8), nominally above BASELINE on both
+metrics despite receiving only a binary \emph{anomaly-present} flag---though,
+as quantified below, that particular gap is not resolvable at this sample size. The 37.5\%
 ACR ceiling is theoretically justified: of the 8 anomaly tasks, only 3
 (mandatory hardware-failure discards) can be correctly identified from a single
 binary indicator; the remaining 5 require knowing \emph{which} specific rule
@@ -611,10 +673,27 @@ SLM reaches 97.1\% SCR and
 75.0\% ACR (6/8). The 2 non-compliant cases arose
 from API network instability (residual after the thought-parts parsing fix),
 not reasoning errors---when the model responded, its decision was correct. LLM
-achieves 100.0\% on both metrics, confirming that
-reading and applying semantic rules in natural language surpasses both the fixed
-heuristic and the purely numerical RL agent, in exact proportion to the semantic
-complexity of the task.
+attains 100.0\% on both metrics (69/69 and 8/8), consistent with the hypothesis
+that reading and applying rules stated in natural language dominates both the
+fixed heuristic and the purely numerical RL agent. We deliberately report this
+as a point estimate on a single workload rather than as a demonstrated ceiling:
+8/8 carries a Wilson 95\%~CI of 67.6--100\% (Clopper--Pearson 63.1--100\%), so
+the data are equally consistent with a true compliance rate near 70\%.
+
+\paragraph*{Statistical resolution at $n=8$}
+Because all four engines consume the identical task sequence the comparison is
+\emph{paired}, admitting McNemar's exact test---more powerful than contrasting
+independent rates. Even so, only one of the six pairwise contrasts is
+significant at $\alpha=0.05$: LLM versus BASELINE (6 discordant pairs, all
+favouring LLM; $p=0.031$). LLM versus DRL falls just short ($5/0$; $p=0.0625$),
+SLM versus DRL is unresolved ($3/0$; $p=0.250$), and DRL versus BASELINE is
+indistinguishable from noise ($2/3$; $p=1.000$). The ordering
+BASELINE $<$ DRL $<$ SLM $<$ LLM is thus a consistent \emph{trend}, not an
+established ranking: at $n=8$ a single reclassification moves ACR by 12.5~pp.
+The contrast the abstract states---semantic-reasoning engine versus numerical
+heuristic---is the one the evidence supports. Pooling 10--20 seeds
+(80--160 anomaly-carrying tasks) would narrow the ACR intervals to
+$\pm5$--$7$~pp and resolve the rest.
 
 The per-anomaly breakdown of the 8 constrained tasks (3~hardware-failure,
 3~GDPR, 2~data-sovereignty) makes the compliance ceilings concrete. The
@@ -630,36 +709,47 @@ thus tracks precisely how much semantic information each paradigm can access,
 from none (geographic coincidence) to full natural-language rule comprehension.
 
 \subsection{Energy Efficiency}
+\label{sec:energy}
 
-The most dramatic differential is energy per decision (Table~\ref{tab:kpi}).
-The LLM-to-BASELINE ratio is $5{,}000$$\times$
-(5.0~J vs.\ 0.001~J), reflecting
-the full cost of routing each decision through the cloud versus local if-else
-logic.
+Per-decision energy is \emph{not} instrumented: it is a declared parametric
+model, one constant per engine applied uniformly to every decision
+(Table~\ref{tab:kpi}). We state this explicitly because the resulting ratios
+are properties of the model's inputs rather than measurements. The constants
+are BASELINE \SI{1}{\milli\joule} (a branch-and-compare over three candidates,
+$\approx$\SI{1}{\micro\second} at $\approx$\SI{1}{\watt}); DRL
+\SI{5}{\milli\joule} (one $[64,64]$ \ac{MLP} forward pass,
+$\approx$\SI{2}{\milli\second} at $\approx$\SI{2}{\watt}); SLM
+\SI{100}{\milli\joule} (the \SI{50}{\milli\second} \ac{NPU} benchmark at
+$\approx$\SI{2}{\watt}); and LLM \SI{5}{\joule} ($\approx$\SI{1}{\second} of
+satellite-to-ground transmission at $\approx$\SI{5}{\watt}).
 
-Table~\ref{tab:battery} shows satellite battery state at simulation end under
-the BASELINE engine. SAT-2 (EUROPE, smallest 50~Wh capacity) reached
-21.8\% \ac{SoC}---only 1.8~percentage points above the
-20\% safety threshold---confirming that the pessimistic eclipse model
-(Section~\ref{sec:sysmodel}) generates real, measurable energy pressure within
-the 20-minute window.
+The resulting LLM-to-BASELINE ratio, $5{,}000\times$, inherits the uncertainty
+of both endpoints and should be read as an order-of-magnitude statement, not a
+measured result. The LLM constant moreover charges only the uplink and omits
+datacenter inference, so it \emph{understates} the true cloud cost.
+Instrumenting the local engines with \ac{RAPL} counters and deriving the remote
+ones from measured token counts is left to future work; the qualitative
+ordering is robust to any plausible revision of these constants.
 
-\begin{table}[!t]
-\centering
-\caption{Final Battery State at $t = 1{,}200$\,s (BASELINE engine)}
-\label{tab:battery}
-\footnotesize
-\begin{tabular}{llcc}
-\toprule
-\textbf{Satellite} & \textbf{Region} & \textbf{Capacity} & \textbf{Final SoC} \\
-\midrule
-SAT-1  & Brazil & 75\,Wh  & 61.9\% (Solar) \\
-SAT-2  & Europe & 50\,Wh  & 21.8\% $\dagger$ (Eclipse) \\
-SAT-15 & USA    & 100\,Wh & 53.4\% (Eclipse) \\
-\bottomrule
-\multicolumn{4}{l}{\footnotesize$\dagger$ Only 1.8\,pp above 20\% safety threshold.}
-\end{tabular}
-\end{table}
+At simulation end under the BASELINE engine the fleet retained
+61.9\% (SAT-1, Brazil, 75~Wh, in sunlight), 21.8\% (SAT-2, Europe, 50~Wh, in
+eclipse) and 53.4\% (SAT-15, USA, 100~Wh, in eclipse) \ac{SoC}. SAT-2 ended
+only 1.8~percentage points above the 20\% safety threshold, confirming that the
+pessimistic eclipse model (Section~\ref{sec:sysmodel}) generates real,
+measurable energy pressure within the 20-minute window.
+
+This choice ($\approx$53\% eclipse against $\approx$35\% in the
+literature~\cite{sumanth2019}) does not affect the engines symmetrically, and
+the asymmetry runs \emph{against} the engines we report most favourably.
+BASELINE is battery-greedy, so a deeper eclipse mostly reshuffles which
+satellite it picks, leaving throughput intact; the rule-driven engines have no
+such freedom, since a GDPR or sovereignty constraint pins the decision to one
+region and a depleted satellite there leaves discarding as the only compliant
+action. The pessimistic setting is therefore conservative with respect to our
+conclusions. No battery-forced compliance drop materialised in this run---the
+LLM's three drops are all mandatory hardware discards---so this is a structural
+sensitivity argument; quantifying it needs an eclipse-fraction sweep.
+
 
 By Little's Law (Eq.~\ref{eq:ram}), expected steady-state RAM utilisation is
 $\approx$16\%. The time-weighted observed values are BASELINE
@@ -676,7 +766,9 @@ queue exhaustion.
 BASELINE and DRL operate in the sub-millisecond range, suitable for any task
 arrival rate. SLM operates at the NPU benchmark (\SI{50}{\milli\second}), and
 LLM incurs a full round-trip to the ground station
-(\SI{6112}{\milli\second} average). From a throughput
+(median \SI{955}{\milli\second}, IQR \numrange{877}{1131}~ms; the
+\SI{6112}{\milli\second} run mean reflects free-tier rate-limit back-off on 10
+of 69 calls rather than inference or propagation cost). From a throughput
 perspective, BASELINE accepts all 69 tasks (zero drops); DRL and
 SLM each drop $\approx$10\%, and LLM drops only 3 tasks---all
 three of which are semantically correct mandatory discards (hardware-failure
@@ -688,26 +780,52 @@ to accept.
 
 This paper presented the first controlled comparison of four orchestration
 paradigms---greedy heuristic, DRL, embedded \ac{SLM}, and centralized
-\ac{LLM}---in a semantics-aware NTN-MEC simulation. The central finding is
-that LLM achieves 100\% semantic and anomaly
-compliance by parsing natural-language rules, while BASELINE and DRL are
-limited to 25\% and
-38\% anomaly compliance, respectively, by the
-structural absence of semantic parsing capability.
+\ac{LLM}---in a semantics-aware NTN-MEC simulation. On the workload studied,
+the LLM resolved every semantic constraint it was given (69/69 tasks, 8/8
+anomaly-carrying) by parsing natural-language rules, whereas BASELINE and DRL
+reached 25\% and 38\% anomaly compliance
+respectively, lacking any mechanism to read the rule. Under an exact paired
+test, the LLM-versus-heuristic gap is statistically established ($p=0.031$);
+the intermediate orderings are trends that the present sample size
+($n=8$ anomaly-carrying tasks, single seed) cannot resolve.
 
 Three structural trade-offs define the applicability of each paradigm:
 (1)~\emph{Cognitive capacity vs.\ operational cost}: SLM and LLM correctly
 handle semantic constraints that BASELINE and DRL cannot identify---at higher
-latency and up to $5{,}000$$\times$ higher energy cost per decision.
+latency and, under the declared per-decision energy model of
+Section~\ref{sec:energy}, three to four orders of magnitude higher energy cost.
 (2)~\emph{Latency vs.\ context richness}: BASELINE and DRL decide in
 microseconds from a minimal state vector; SLM and LLM pay latency proportional
 to the reasoning complexity required.
-(3)~\emph{Reward-shaped learning vs.\ explicit rules}: reward shaping raised
-DRL above BASELINE on both metrics, but the ceiling is structural---without
-observing the anomaly type, DRL cannot reach 100\% compliance as zero-shot
-LLM/SLM do.
+(3)~\emph{Reward-shaped learning vs.\ explicit rules}: reward shaping moved DRL
+nominally above BASELINE on both metrics, although that specific gap is not
+statistically resolvable here ($p=1.000$). The ceiling, however, is structural
+and analytic rather than empirical---without observing the anomaly type, no
+policy over this observation space can exceed 3/8, whereas zero-shot LLM/SLM
+read the rule directly.
 
-Natural directions for future work include: (a)~a hybrid macro-micro architecture
+\subsection*{Limitations}
+Three limitations bound these conclusions. First, the comparison is
+\emph{asymmetric by construction}: DRL observes a single anomaly-present bit
+while SLM and LLM receive the rule text. This isolates the value of semantic
+parsing, but it means the 37.5\% ceiling characterises \emph{this observation
+space}, not DRL as a paradigm---given a one-hot encoding of the three rule
+types, a DRL agent (or a three-entry lookup table) should approach full
+compliance. Second, the semantic space is small and closed: three enumerated
+tokens whose ground truth is a three-branch predicate. That scale does not by
+itself justify a language model, and these results should not be read as
+establishing that it does; the claim a language model can uniquely support is
+\emph{generalisation to constraints not enumerated at design time}, which this
+experiment does not test. Third, the workload is light ($\lambda=4$~tasks/min,
+12--14\% RAM occupancy), so the resource constraint never binds: the drop-rate
+and utilisation findings describe an unsaturated regime, and the single-step
+($\gamma=0$) formulation is appropriate precisely because temporal coupling is
+weak. Our ongoing work addresses all three---an information-parity DRL arm and
+a rule-table oracle, evaluated against a held-out corpus of unseen,
+compositional natural-language constraints, under load high enough for RAM to
+bind.
+
+Further directions for future work include: (a)~a hybrid macro-micro architecture
 (LLM for periodic policy reconfiguration; SLM/DRL for high-frequency task-level
 decisions), along the lines suggested by Lee and Park~\cite{lee2024};
 (b)~longer simulation windows ($\geq$2~hours) to cover multiple complete eclipse

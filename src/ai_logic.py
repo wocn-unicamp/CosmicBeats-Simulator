@@ -62,6 +62,7 @@ class MECOrchestrator:
         self.task_log    = []   # uma entrada por tarefa finalizada
         self.active_tasks = []  # (completion_time, sat_id, ram_used) — para liberar RAM
         self._last_step_time = 0.0
+        self._step_delta     = 0.0   # inferido do loop; usado para fechar a janela
 
     # ------------------------------------------------------------------ #
     # Setup                                                                #
@@ -210,6 +211,11 @@ class MECOrchestrator:
     # ------------------------------------------------------------------ #
 
     def step(self, current_time_sec):
+        # O loop chama step() em t = 0, delta, 2*delta, ... (N-1)*delta, de modo que
+        # o timestamp do ultimo passo e (N-1)*delta e nao a duracao da janela (N*delta).
+        # Guardamos o delta para fechar a janela corretamente em save_metrics().
+        if current_time_sec > self._last_step_time:
+            self._step_delta = current_time_sec - self._last_step_time
         self._last_step_time = current_time_sec
 
         # 1. Libera RAM de tarefas concluídas
@@ -372,7 +378,8 @@ class MECOrchestrator:
             # RAM utilization ponderada pelo tempo (integral de RAM_usada×dt / sim_total×RAM_total).
             # Métrica de snapshot (final tick) era idêntica em todos os engines pois os últimos
             # 60s têm as mesmas tarefas aceitas — este cálculo usa o task_log completo.
-            sim_duration = self._last_step_time or 1.0
+            # Janela completa = instante do ultimo passo + um delta (ver step()).
+            sim_duration = (self._last_step_time + self._step_delta) or 1.0
             sat_ram_seconds: dict = {}
             for r in self.task_log:
                 if r['success'] != 1:
