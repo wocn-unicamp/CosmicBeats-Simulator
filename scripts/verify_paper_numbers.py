@@ -94,11 +94,15 @@ def check_multiseed(c: Checker, logs_dir: str) -> None:
     if not os.path.isdir(logs_dir):
         print(f"  (pulando multi-semente: {logs_dir} nao existe)")
         return
-    runs = load_runs(logs_dir)
+    # O paragrafo multi-semente do artigo fala especificamente dos motores
+    # deterministicos. Fixa-los aqui evita que a verificacao mude de resultado
+    # conforme a campanha remota vai depositando sementes parciais de SLM/LLM.
+    det = ["BASELINE", "DRL"]
+    runs = load_runs(logs_dir, det)
     keys = paired_keys(runs)
     if not keys:
         return
-    src = f"{logs_dir}/seed*/mec_metrics_*.csv"
+    src = f"{logs_dir}/seed*/mec_metrics_{{{','.join(det)}}}.csv"
     comp = compliance_table(runs, keys)
     seeds = len({k.split(":")[0] for k in keys})
 

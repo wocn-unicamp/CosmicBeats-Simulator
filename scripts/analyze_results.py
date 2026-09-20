@@ -130,19 +130,26 @@ def mcnemar_exact(b01: int, b10: int) -> float:
 # Carga de dados
 # --------------------------------------------------------------------------- #
 
-def load_runs(logs_dir: str) -> dict[str, dict[str, dict]]:
+def load_runs(logs_dir: str, engines: list[str] | None = None) -> dict[str, dict[str, dict]]:
     """Retorna {engine: {chave_da_tarefa: linha}}.
+
+    `engines` restringe quais motores entram. Isso importa: o pareamento exige
+    a tarefa presente em TODOS os motores carregados, entao uma campanha em
+    andamento — com um motor cobrindo poucas sementes e outro cobrindo todas —
+    colapsaria a agregacao para a intersecao. Fixar o conjunto evita que o
+    resultado de uma analise mude so porque outra execucao terminou.
 
     A chave é (seed, task_id) para que o pareamento entre engines sobreviva à
     agregação multi-seed — tarefa 7 do seed 3 só pode ser comparada com a tarefa 7
     do seed 3 dos demais engines.
     """
-    runs: dict[str, dict[str, dict]] = {e: {} for e in ENGINES}
+    wanted = [e for e in (engines or ENGINES) if e in ENGINES]
+    runs: dict[str, dict[str, dict]] = {e: {} for e in wanted}
     seed_dirs = sorted(glob.glob(os.path.join(logs_dir, "seed*")))
     sources = [(os.path.basename(d), d) for d in seed_dirs] or [("seed0", logs_dir)]
 
     for seed, directory in sources:
-        for engine in ENGINES:
+        for engine in wanted:
             path = os.path.join(directory, f"mec_metrics_{engine}.csv")
             if not os.path.exists(path):
                 continue
@@ -368,12 +375,14 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--logs-dir", default="logs")
+    ap.add_argument("--engines", nargs="+", default=None, choices=ENGINES,
+                    help="restringe os motores pareados (default: todos os presentes)")
     ap.add_argument("--sim-duration", type=float, default=SIM_DURATION_S)
     ap.add_argument("--latex", action="store_true", help="emite fragmentos LaTeX")
     ap.add_argument("--json", metavar="PATH", help="grava o resultado bruto em JSON")
     args = ap.parse_args()
 
-    runs = load_runs(args.logs_dir)
+    runs = load_runs(args.logs_dir, args.engines)
     if not runs:
         raise SystemExit(f"nenhum mec_metrics_*.csv encontrado em {args.logs_dir}/")
     keys = paired_keys(runs)
