@@ -242,7 +242,9 @@ A constellation of three \ac{LEO} satellites operates as \ac{MEC} nodes, each
 assigned to a fixed geographic region (Brazil, Europe, USA). Satellites carry
 heterogeneous computational payloads: 4{,}096~MB RAM each, with battery
 capacities of 75~Wh (SAT-1/Brazil), 50~Wh (SAT-2/Europe), and 100~Wh
-(SAT-15/USA). The \ac{ISL} is assumed always available (a common assumption for
+(SAT-15/USA). These capacities are nominal: \ac{SoC} dynamics are expressed in
+percentage points and do not scale with capacity, so the satellites differ in
+initial \ac{SoC} (90/75/85\%) and orbital phase rather than in energy storage. The \ac{ISL} is assumed always available (a common assumption for
 constellations with optical ISL), so drops reflect exclusively battery/RAM
 exhaustion or semantic rule violations---never link failure.
 
@@ -304,7 +306,7 @@ Table~\ref{tab:params} lists all simulation parameters with explicit provenance.
 Orbital period   & 90 min           & Typical LEO range \cite{guo2024,gpp2022} \\
 Eclipse fraction & $\approx$53\%    & Above typical $\approx$35 min \cite{sumanth2019}; pessimistic stress scenario \\
 Battery threshold & 20\% SoC        & Design choice \\
-Battery capacities & 75/50/100 Wh  & Design choice (heterogeneous HW) \\
+Battery capacities & 75/50/100 Wh  & Design choice (nominal; see Sec.~\ref{sec:sysmodel}) \\
 SLM latency (NPU) & \SI{50}{\milli\second} & Order-of-magnitude from on-device benchmarks \cite{wang2025} \\
 Task arrival     & Poisson, $\lambda$\,=\,4/min (3.4 eff.) & Standard NTN/IoT model \cite{guo2024}; rate is design choice \\
 RAM (total / task) & 4{,}096 / 500 MB & Design choice \\
@@ -730,13 +732,13 @@ ordering is robust to any plausible revision of these constants.
 
 Against the battery budget, however, decision energy is small: the LLM's
 \SI{345}{\joule} over the run is 0.19\% of the smallest (\SI{50}{\watt\hour})
-battery, and under the same model executing a single task costs as much as
-about 720 LLM decisions. The operative cost of semantic compliance is therefore
+battery, and under the same model executing a single task costs, on that
+battery, as much as about 720 LLM decisions. The operative cost of semantic compliance is therefore
 latency and dependence on a ground link, not energy.
 
 At simulation end under the BASELINE engine the fleet retained
-61.9\% (SAT-1, Brazil, 75~Wh, in sunlight), 21.8\% (SAT-2, Europe, 50~Wh, in
-eclipse) and 53.4\% (SAT-15, USA, 100~Wh, in eclipse) \ac{SoC}. SAT-2 ended
+61.9\% (SAT-1, Brazil, from 90\%, in sunlight), 21.8\% (SAT-2, Europe, from
+75\%, in eclipse) and 53.4\% (SAT-15, USA, from 85\%, in eclipse) \ac{SoC}. SAT-2 ended
 only 1.8~percentage points above the 20\% safety threshold, confirming that the
 pessimistic eclipse model (Section~\ref{sec:sysmodel}) generates real,
 measurable energy pressure within the 20-minute window.

@@ -35,11 +35,16 @@ PAPER_HELDOUT_SEEDS = [0, 1, 2]
 
 class Checker:
     def __init__(self, tex: str):
-        self.tex = tex
+        # O LaTeX trata quebra de linha como espaco; o verificador tambem precisa,
+        # ou um valor dividido entre duas linhas do fonte parece ausente.
+        import re as _re
+        self._ws = _re.compile(r"\s+")
+        self.tex = self._ws.sub(" ", tex)
         self.ok: list[str] = []
         self.bad: list[tuple[str, str, str]] = []
 
     def expect(self, what: str, needle: str, source: str) -> None:
+        needle = self._ws.sub(" ", needle)
         (self.ok.append(what) if needle in self.tex
          else self.bad.append((what, needle, source)))
 
@@ -243,6 +248,35 @@ def check_reviewer2_budgets(c: Checker) -> None:
     c.expect("tarefa vs decisao do LLM", f"about {task_J / 5.0:.0f} LLM decisions", src)
 
 
+def check_battery(c: Checker, repo: str) -> None:
+    """SoC inicial (constantes do simulador) e final (corrida canonica, BASELINE).
+
+    Os valores finais estavam no artigo desde a submissao sem nenhuma checagem.
+    Os iniciais entraram quando se constatou que as capacidades em Wh sao
+    nominais — a dinamica e em pontos percentuais e ignora a capacidade — e que
+    o que de fato distingue os satelites e o SoC de partida.
+    """
+    import json as _json, re as _re
+    src_code = os.path.join(repo, "src/ai_logic.py")
+    code = open(src_code).read()
+    soc_map = eval(_re.search(r"soc_map\s*=\s*(\{[^}]*\})", code).group(1))
+    region_map = eval(_re.search(r"region_map\s*=\s*(\{[^}]*\})", code).group(1))
+    by_region = {region_map[k]: v for k, v in soc_map.items()}
+    order = ("BRAZIL", "EUROPE", "USA")          # SAT-1, SAT-2, SAT-15 no texto
+    NAME = {"BRAZIL": "Brazil", "EUROPE": "Europe", "USA": "USA"}  # grafia do artigo
+    c.expect("SoC inicial por regiao",
+             "/".join(f"{by_region[r]:.0f}" for r in order) + "\\%", src_code)
+    summ = _json.load(open(os.path.join(repo, "logs/mec_summary_BASELINE.json")))
+    for sat, reg in (("1", "BRAZIL"), ("2", "EUROPE"), ("15", "USA")):
+        final = summ[f"sat_{sat}_final_battery_pct"]
+        c.expect(f"SoC final SAT-{sat}",
+                 f"{final:.1f}\\% (SAT-{sat}, {NAME[reg]}, from {by_region[reg]:.0f}\\%",
+                 "logs/mec_summary_BASELINE.json")
+    # A bateria de SAT-2 termina 1,8 pp acima do piso de 20% — afirmado no texto.
+    margin = summ["sat_2_final_battery_pct"] - 20.0
+    c.expect("margem do SAT-2 sobre o piso", f"{margin:.1f}~percentage points", "idem")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -262,6 +296,8 @@ def main() -> int:
     check_generalization(c, REPO)
     print("verificando as respostas ao Revisor 2...")
     check_reviewer2_budgets(c)
+    print("verificando os estados de bateria...")
+    check_battery(c, REPO)
     return c.report()
 
 
