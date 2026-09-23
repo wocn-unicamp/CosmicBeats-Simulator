@@ -81,13 +81,19 @@ def main() -> int:
     ap.add_argument("--boot", type=int, default=2000)
     ap.add_argument("--fig", default=None)
     ap.add_argument("--json", default=None)
+    ap.add_argument("--train-seed", type=int, default=42,
+                    help="semente de treino dos agentes a comparar (42 = modelos originais)")
     args = ap.parse_args()
     seeds = list(range(args.seeds))
 
     from stable_baselines3 import DQN
     agents = {"ORACLE": ("g0", per_seed(lambda e, o: oracle_action(e), args.rate, seeds))}
+    suffix = "" if args.train_seed == 42 else f"_s{args.train_seed}"
     for path in sorted(glob.glob(os.path.join(REPO, "models/seq/*/best_model.zip"))):
         name = os.path.basename(os.path.dirname(path))
+        seeded = "_s" in name.rsplit("_l", 1)[-1]
+        if (suffix and not name.endswith(suffix)) or (not suffix and seeded):
+            continue
         fam = "g99" if name.startswith("g0p99_") else "g0"
         m = DQN.load(path)
         agents[name] = (fam, per_seed(lambda e, o, m=m: int(m.predict(o, deterministic=True)[0]),

@@ -31,8 +31,11 @@ from stable_baselines3.common.monitor import Monitor  # noqa: E402
 from src.schedulers.drl_seq_env import NTNMECSeqEnv  # noqa: E402
 
 
-def run_name(gamma: float, w: float, rate: float) -> str:
-    return f"g{gamma:g}_w{w:g}_l{rate:g}".replace(".", "p")
+def run_name(gamma: float, w: float, rate: float, seed: int = 42) -> str:
+    # A semente 42 mantem o nome original (os modelos ja versionados); as demais
+    # levam sufixo, para que treinos repetidos nao sobrescrevam os existentes.
+    base = f"g{gamma:g}_w{w:g}_l{rate:g}".replace(".", "p")
+    return base if seed == 42 else f"{base}_s{seed}"
 
 
 def main() -> int:
@@ -45,7 +48,7 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 
-    outdir = os.path.join(REPO, "models", "seq", run_name(args.gamma, args.w, args.arrival_rate))
+    outdir = os.path.join(REPO, "models", "seq", run_name(args.gamma, args.w, args.arrival_rate, args.seed))
     os.makedirs(outdir, exist_ok=True)
 
     def make():
@@ -69,7 +72,7 @@ def main() -> int:
                 policy_kwargs={"net_arch": [64, 64]}, seed=args.seed, verbose=0)
     model.learn(total_timesteps=args.timesteps, callback=eval_cb)
     model.save(os.path.join(outdir, "final_model"))
-    print(f"[ok] {run_name(args.gamma, args.w, args.arrival_rate)} -> {outdir}")
+    print(f"[ok] {run_name(args.gamma, args.w, args.arrival_rate, args.seed)} -> {outdir}")
     return 0
 
 
