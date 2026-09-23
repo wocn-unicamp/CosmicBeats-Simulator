@@ -29,6 +29,9 @@ from analyze_results import (  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Sementes da coluna "regras ineditas" da Tabela IV do camera-ready.
+PAPER_HELDOUT_SEEDS = [0, 1, 2]
+
 
 class Checker:
     def __init__(self, tex: str):
@@ -155,7 +158,10 @@ def check_generalization(c: Checker, repo: str) -> None:
     if not os.path.isdir(lm_dir):
         print("  (pulando generalizacao: sem dados de SLM/LLM nas ineditas)")
         return
-    seeds = sorted(int(d[4:]) for d in os.listdir(lm_dir) if d.startswith("seed"))
+    # As sementes que o ARTIGO usa, fixadas. Ler "tudo o que houver no diretorio"
+    # faria o resultado mudar sozinho quando a campanha da versao estendida
+    # depositar sementes novas — o mesmo erro que ja colapsou o pareamento uma vez.
+    seeds = PAPER_HELDOUT_SEEDS
     data = {e: {} for e in engines}
     for s_ in seeds:
         for e in engines:
@@ -214,13 +220,24 @@ def check_reviewer2_budgets(c: Checker) -> None:
     Recomputadas das constantes do proprio simulador, para que o texto nao
     diverja silenciosamente se alguma delas mudar.
     """
-    lam_per_s = 4.0 / 60.0                   # ai_logic: lambda_rate
+    # Taxa EFETIVA, nao a nominal: o gerador resolve chegadas no passo de 5 s, no
+    # maximo uma por passo, e cronometra a proxima a partir do passo que serviu a
+    # anterior. O intervalo e 5*ceil(X/5), X~Exp(lambda), cuja media e
+    # 5/(1-exp(-5*lambda)). Com lambda=4/min isso da 17,6 s (3,4/min), e nao 15 s
+    # — erro que chegou a entrar no texto e foi pego pela varredura de carga.
+    import math
+    step_s, lam_nominal_per_s = 5.0, 4.0 / 60.0
+    mean_gap_s = step_s / (1 - math.exp(-step_s * lam_nominal_per_s))
+    lam_per_s = 1.0 / mean_gap_s
     llm_median_s = 0.955                     # mediana medida (Secao V-C)
     smallest_bat_J = 50 * 3600.0             # 50 Wh (SAT-2)
     llm_run_J = 5.0 * 69                     # JOULES_PER_DECISION['LLM'] x 69
     task_J = 0.02 * smallest_bat_J           # TASK_ENERGY_COST_PCT = 2%
     src = "src/ai_logic.py (constantes do modelo)"
-    c.expect("intervalo medio entre chegadas", f"{1 / lam_per_s:.0f}~s", src)
+    c.expect("intervalo medio entre chegadas (efetivo)", f"{mean_gap_s:.1f}~s", src)
+    c.expect("taxa efetiva", f"$\\approx${60 * lam_per_s:.1f}~tasks/min", src)
+    little = 100 * (60 * lam_per_s) * 500 / (3 * 4096)
+    c.expect("Little com a taxa efetiva", f"{little:.1f}\\%", src)
     c.expect("fracao da janela usada pelo LLM", f"{100 * llm_median_s * lam_per_s:.1f}\\%", src)
     c.expect("energia do LLM vs menor bateria", f"{100 * llm_run_J / smallest_bat_J:.2f}\\%", src)
     c.expect("tarefa vs decisao do LLM", f"about {task_J / 5.0:.0f} LLM decisions", src)
