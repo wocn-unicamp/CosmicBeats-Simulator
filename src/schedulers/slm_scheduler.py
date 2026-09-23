@@ -4,6 +4,8 @@ import json
 import re
 import time
 import requests
+
+from src.schedulers.llm_scheduler import MAX_ATTEMPTS, TRANSIENT_HTTP, backoff_s
 import urllib3
 from dotenv import load_dotenv
 
@@ -109,6 +111,9 @@ class SLMScheduler:
         fleet = task_dict.get("slm_fleet_snapshot", [])
         t0 = time.perf_counter()
         api_result = self._call_gemini(task_dict, fleet)
+        # Falha de API ou de parsing NAO e decisao do modelo: registrada a parte.
+        task_dict["decision_source"] = ("model" if api_result is not None
+                                        else getattr(self, "_last_failure", "api_failure"))
         result = self._resolve_action(api_result, fleet, task_dict) if api_result is not None else None
         task_dict["slm_wall_latency_ms"] = (time.perf_counter() - t0) * 1000
         return result
@@ -161,7 +166,8 @@ class SLMScheduler:
                 "maxOutputTokens": 1024,
             },
         }
-        for attempt in range(4):
+        self._last_failure = "api_failure"
+        for attempt in range(MAX_ATTEMPTS):
             try:
                 t0 = time.perf_counter()
                 r = requests.post(url, headers=headers, json=data, verify=False, timeout=30)
@@ -177,26 +183,28 @@ class SLMScheduler:
                     combined = "{" + raw if not raw.lstrip().startswith("{") else raw
                     result = _parse_gemma_json(combined)
                     if result is None:
-                        print(f"   [SLM Parse Error] Tentativa {attempt+1}/4 — No JSON found in: {raw[:80]}")
+                        print(f"   [SLM Parse Error] Tentativa {attempt+1}/{MAX_ATTEMPTS}"
+                              f" — No JSON found in: {raw[:80]}")
+                        self._last_failure = "parse_failure"
                         continue
                     print(f"   [SLM {SLM_MODEL} {latencia_ms:.0f}ms] action={result.get('action')}"
                           f" target={result.get('target_region')} reason={result.get('reason', '')}")
                     return result
-                elif r.status_code == 429:
-                    wait = 30 * (attempt + 1)
-                    print(f"   [SLM Rate Limit] Tentativa {attempt+1}/4 — aguardando {wait}s")
-                    time.sleep(wait)
-                    continue
-                elif r.status_code == 500:
-                    wait = 10 * (attempt + 1)
-                    print(f"   [SLM Server Error 500] Tentativa {attempt+1}/4 — aguardando {wait}s")
+                elif r.status_code in TRANSIENT_HTTP:
+                    wait = backoff_s(attempt, r.status_code)
+                    print(f"   [SLM HTTP {r.status_code}] Tentativa {attempt+1}/{MAX_ATTEMPTS}"
+                          f" — aguardando {wait}s")
+                    self._last_failure = "api_failure"
                     time.sleep(wait)
                     continue
                 else:
                     print(f"   [SLM Error] HTTP {r.status_code} — {r.text[:120]}")
+                    self._last_failure = "api_failure"
                     break
             except Exception as e:
                 print(f"   [SLM Connection Error] {e}")
+                self._last_failure = "api_failure"
+                time.sleep(backoff_s(attempt))
                 continue
         return None
 

@@ -37,6 +37,21 @@ Output ONLY valid JSON:
 """
 
 
+# Erros HTTP transitorios. Antes so o 429 era retentado; um 503 ("model is currently
+# experiencing high demand") fazia o scheduler desistir na hora e a tarefa virava
+# DROP — contado na metrica como decisao do modelo.
+TRANSIENT_HTTP = {429, 500, 502, 503, 504}
+MAX_ATTEMPTS = 6
+
+
+def backoff_s(attempt: int, status: int | None = None) -> int:
+    """Espera antes da proxima tentativa: linear para cota (429), exponencial para
+    sobrecarga e erros de servidor, sempre limitada a 120 s."""
+    if status == 429:
+        return min(120, 30 * (attempt + 1))
+    return min(120, 10 * 2 ** attempt)
+
+
 class LLMScheduler:
     def __init__(self):
         if not API_KEY:
@@ -106,7 +121,7 @@ class LLMScheduler:
                 "maxOutputTokens": 128,
             },
         }
-        for attempt in range(3):
+        for attempt in range(MAX_ATTEMPTS):
             try:
                 t0 = time.perf_counter()
                 r = requests.post(url, headers=headers, json=data, verify=False, timeout=60)
@@ -114,16 +129,19 @@ class LLMScheduler:
                 if r.status_code == 200:
                     print(f"   [LLM] Resposta em {latency_ms:.0f}ms")
                     return r.json()["candidates"][0]["content"]["parts"][0]["text"]
-                elif r.status_code == 429:
-                    wait = 30 * (attempt + 1)
-                    print(f"   [LLM Rate Limit] Tentativa {attempt+1}/3 — aguardando {wait}s")
+                elif r.status_code in TRANSIENT_HTTP:
+                    wait = backoff_s(attempt, r.status_code)
+                    print(f"   [LLM HTTP {r.status_code}] Tentativa {attempt+1}/{MAX_ATTEMPTS}"
+                          f" — aguardando {wait}s")
                     time.sleep(wait)
                     continue
                 else:
                     print(f"   [LLM Error] HTTP {r.status_code} — {r.text[:120]}")
                     break
             except Exception as e:
-                print(f"   [LLM Connection Error] Tentativa {attempt+1}/3: {e}")
+                wait = backoff_s(attempt)
+                print(f"   [LLM Connection Error] Tentativa {attempt+1}/{MAX_ATTEMPTS}: {e}")
+                time.sleep(wait)
                 continue
         return None
 
@@ -139,11 +157,16 @@ class LLMScheduler:
             for s in fleet
         )
         if not valid_exists:
+            task_dict["decision_source"] = "prefilter"
             return None
 
         prompt = self._build_prompt(task_dict, fleet)
         raw = self._call_api(prompt)
         if not raw:
+            # Falha de infraestrutura, NAO decisao do modelo. Antes isto virava um
+            # DROP indistinguivel de uma escolha — e numa regra de descarte, um
+            # DROP "conforme" por acidente.
+            task_dict["decision_source"] = "api_failure"
             return None
 
         try:
@@ -154,14 +177,17 @@ class LLMScheduler:
             match = re.search(r'\{.*?\}', raw, re.DOTALL)
             if not match:
                 print(f"   [LLM Parse Error] Nenhum JSON encontrado: {raw[:80]}")
+                task_dict["decision_source"] = "parse_failure"
                 return None
             try:
                 parsed = json.loads(match.group())
             except json.JSONDecodeError as e:
                 print(f"   [LLM Parse Error] JSON inválido: {e} | raw={raw[:80]}")
+                task_dict["decision_source"] = "parse_failure"
                 return None
 
         sat_id = parsed.get("satellite_id")
         reason = parsed.get("reason", "")
         print(f"   [LLM] satellite_id={sat_id} | reason={reason}")
+        task_dict["decision_source"] = "model"
         return sat_id

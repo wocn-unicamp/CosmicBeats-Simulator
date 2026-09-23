@@ -207,6 +207,10 @@ class MECOrchestrator:
             "success":            1 if decision_id is not None else 0,
             "semantic_compliant": 1 if compliant else 0,
             "engine":             self._engine,
+            # Origem da decisao: model | prefilter | api_failure | parse_failure.
+            # Motores locais sao sempre "model". Separa falha de infraestrutura de
+            # escolha do modelo — antes as duas viravam o mesmo DROP.
+            "decision_source":    task.get("decision_source", "model"),
         })
 
     # ------------------------------------------------------------------ #
@@ -353,6 +357,7 @@ class MECOrchestrator:
             "arrival_time_s", "decision_time_s", "latency_ms",
             "joules_cost", "decision_sat_id",
             "success", "semantic_compliant", "engine",
+            "decision_source",   # no fim, para nao deslocar as colunas existentes
         ]
         with open(csv_path, 'w', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
