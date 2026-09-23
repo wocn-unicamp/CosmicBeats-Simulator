@@ -1,0 +1,26 @@
+{
+  "runs": [
+    {
+      "seed": 0,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 4219.5,
+      "total_tasks": 69,
+      "finished_at": "2026-09-23T16:17:17",
+      "tail": null
+    },
+    {
+      "seed": 1,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 6986.2,
+      "total_tasks": 58,
+      "finished_at": "2026-09-23T18:13:43",
+      "tail": null
+    }
+  ]
+}

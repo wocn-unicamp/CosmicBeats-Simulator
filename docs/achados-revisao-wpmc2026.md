@@ -970,6 +970,58 @@ leitura; a semente 2 decide.
 
 ### IX.10 Estado ao encerrar a sessão de 23/09 e como retomar
 
+> **ESTADO AO DESLIGAR O COMPUTADOR — 23/09/2026, 19h. Comece por aqui.**
+>
+> **Nada está rodando.** As campanhas foram paradas de propósito para desligar a máquina.
+>
+> | frente | estado | dados |
+> |---|---|---|
+> | SLM instrumentado, regras inéditas, sementes 0–9 | **concluído** (IX.9.2b) | `logs/generalization/heldout_lm_v2/seed*/mec_metrics_SLM.csv` |
+> | LLM instrumentado, regras inéditas | **sementes 0–1 concluídas; 2–9 pendentes** (a semente 2 foi interrompida aos 41 min e será refeita do zero) | `.../seed0`, `.../seed1` |
+> | réplicas de treino (item 3.3) | **concluído** (IX.9.1) | `models/seq/*_s43`, `*_s44` |
+>
+> Os logs de progresso ficam fora do repositório: `~/cosmicbeats-slm-v2.log` e `~/cosmicbeats-llm-v2.log`.
+>
+> **1. Retomar o LLM**. O runner pula as sementes 0 e 1 porque os arquivos delas existem.
+> A API está lenta (7–10 s por requisição trivial; a semente 1 levou 6.986 s), por isso o
+> limite é de 6 h por semente. Com o notebook na tomada:
+>
+> ```bash
+> cd /media/octaviob/HD/Projetos/CosmicBeats-Simulator
+> setsid nohup systemd-inhibit --what=sleep:idle --why="campanha LLM v2" \
+>   venv/bin/python -u scripts/run_experiments.py --seeds 0-9 --engines LLM \
+>   --rule-split heldout --outdir logs/generalization/heldout_lm_v2 \
+>   --max-api-runs 10 --timeout 21600 >> ~/cosmicbeats-llm-v2.log 2>&1 < /dev/null & disown
+> tail -f ~/cosmicbeats-llm-v2.log      # acompanhar
+> ```
+>
+> Antes, teste a API. Se ela voltar ao HTTP 503, espere. O vigia antigo ficava no
+> scratchpad da sessão e **se perde ao desligar**, então é preciso repetir o teste à mão ou
+> recriar o vigia.
+>
+> **2. Decisão do camera-ready (prazo 30/09).** Quando a semente 2 do LLM terminar, as
+> sementes 0–2 permitem decidir sobre a frase "o LLM mantém 20/20". Contar só
+> `decision_source = model`. Até aqui: 11/11 conformes (IX.9.2b). Se a semente 2 não sair a
+> tempo, suavizar a frase por precaução.
+>
+> **3. Pendência aberta: o teste do `finishReason` do SLM.** Registrar o `finishReason` da
+> API no `slm_scheduler.py` e reexecutar só as 13 tarefas com `parse_failure`, para testar se
+> o `maxOutputTokens = 1024` corta a resposta nas regras de região. **Fazer só com a
+> campanha do LLM parada ou concluída**, e conferir antes se o `main.py` importa o módulo do
+> SLM mesmo quando o motor é o LLM.
+>
+> **4. Depois:** tabela pareada dos seis motores nas regras inéditas (duas leituras:
+> operacional e só decisões do modelo); agentes sequenciais em λ=8; corpus de regras
+> inéditas maior; RAPL (baixa prioridade).
+>
+> **Para a reunião de sexta:** IX.9.1 (só w=0,05 replica), IX.9.2b (SLM falha nas regras
+> de região; 53,6% operacional e 68,2% só-modelo), e as decisões listadas no fim desta seção.
+>
+> *Não versionado, e de propósito:* `logs/generalization/heldout_lm/`, a campanha antiga sem
+> instrumentação (sementes 3–6 e o manifesto), fica só para comparação.
+>
+> O texto abaixo é o registro das 12h45 e foi mantido como histórico.
+
 **Rodando em segundo plano (destacado da sessão; notebook precisa ficar na tomada):**
 
 | frente | saída | log |
