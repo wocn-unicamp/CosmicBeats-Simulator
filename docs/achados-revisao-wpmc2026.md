@@ -731,6 +731,48 @@ pediu — visível na política aprendida, e ausente no agente míope.
 mesma curva. Para decidir, é preciso a **fronteira** conformidade × throughput de cada γ;
 uma segunda grade (w ∈ {0,05; 0,1; 0,15; 0,4; 0,6}) está em treino.
 
+### IX.8 Falha de API se passava por decisão do modelo
+
+Ao ampliar a coluna das regras inéditas com as sementes 3–4, o LLM caiu de 20/20 para
+**23/28 (82,1%)**. Antes de corrigir o texto, investiguei.
+
+Os 5 "erros" eram todos **descartes**, e todos em tarefas cuja região **já era** a exigida
+(tarefa europeia com residência de dados na UE; tarefa brasileira com LGPD) — bastava
+rotear para a própria região. Reproduzindo as decisões gravadas no ambiente sequencial,
+o satélite exigido estava **viável** nos cinco casos (SoC entre 74% e 97%, RAM livre).
+Refazendo as chamadas com o prompt exato, a API respondeu **HTTP 503** — *"This model is
+currently experiencing high demand"*.
+
+**Causa:** os dois schedulers remotos só refaziam a tentativa em 429 (o SLM também em
+500). Um 503 fazia desistir na hora, a tarefa virava DROP, e o CSV registrava isso como
+se fosse decisão do modelo. Três consequências:
+
+1. os 5 "erros" do LLM nas sementes 3–4 são, muito provavelmente, falhas de API;
+2. explica por que essas execuções rodaram quase 2× mais rápido (514–529 s contra
+   870–960 s): as chamadas falhavam em vez de esperar resposta;
+3. **numa regra de descarte, uma falha de API produz um DROP "conforme" por acidente.**
+   Então até o 5/5 de descartes do LLM e do SLM nas sementes 0–2 — os números do
+   camera-ready — pode conter falhas que acertaram sem querer. Não dá para saber a partir
+   dos CSVs antigos.
+
+**Correção** (commit `94b5131`): retentativa em 429/500/502/503/504 e erro de conexão
+(até 6 tentativas, backoff limitado a 120 s), e uma coluna nova `decision_source` no CSV
+(`model` / `prefilter` / `api_failure` / `parse_failure`). Falha de infraestrutura
+deixa de se passar por escolha do modelo. A partir daqui é possível reportar duas
+métricas distintas: conformidade **do modelo** (só decisões `model`) e conformidade
+**operacional** (tudo, porque em operação uma falha de API também deixa a tarefa sem
+atendimento).
+
+**Nova campanha, instrumentada** (`logs/generalization/heldout_lm_v2`, sementes 0–9,
+os dados antigos preservados para comparação): o SLM já está rodando; o LLM aguarda a API
+sair do 503, com um vigia que testa a cada 10 min. Ao fim, as sementes 0–2 dirão se os
+números do camera-ready se sustentam sem a ambiguidade.
+
+**Achado lateral:** o pré-filtro do LLM decide se chama a API olhando só o satélite da
+**própria região da tarefa**. Numa tarefa GDPR vinda do Brasil, é a bateria do satélite
+brasileiro — irrelevante para a regra — que decide. Em λ=4 quase nunca dispara; a
+coluna `decision_source` vai medir quanto.
+
 ---
 
 ## Apêndice — Como verificar

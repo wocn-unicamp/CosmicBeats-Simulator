@@ -143,7 +143,10 @@ def main() -> int:
 
     seeds = parse_seeds(args.seeds)
     outdir = args.outdir if os.path.isabs(args.outdir) else os.path.join(REPO, args.outdir)
-    manifest_path = os.path.join(outdir, "manifest.json")
+    # Um manifesto por conjunto de motores: duas campanhas concorrentes no mesmo
+    # diretorio (ex.: SLM agora, LLM quando a API voltar) nao podem sobrescrever
+    # o registro uma da outra. Os CSV/JSON ja sao por (semente, motor).
+    manifest_path = os.path.join(outdir, f"manifest_{'_'.join(sorted(args.engines))}.json")
 
     # Ordena por semente para que cada semente fique completa em todos os engines
     # antes da proxima: uma campanha interrompida rende seeds inteiras, que e o
