@@ -490,6 +490,155 @@ supera o limite de 1/3 de uma política que não lê a regra.
 
 ---
 
+## Parte IX — Versão estendida (a partir de 23/09)
+
+Trabalho na branch `extended/journal-version`, criada a partir do camera-ready, que fica
+intocado para a revisão do orientador. Correções que atingem o camera-ready são feitas
+nele (via worktree separado, sem interferir nas campanhas em curso) e depois trazidas
+para a branch estendida por merge.
+
+### IX.1 Campanha de sementes adicionais nas regras inéditas
+
+Objetivo: testar o resultado central do camera-ready, apoiado em apenas 3 sementes
+(n=20). Sementes 3 a 9 para SLM e LLM — 14 execuções, ~966 chamadas de API, ~20 min
+cada. Rodando destacada da sessão (`setsid nohup systemd-inhibit`), com o notebook na
+tomada. O verificador do artigo fixa as sementes da Tabela IV (0, 1, 2), para não mudar
+de resultado quando estas chegarem.
+
+### IX.2 Varredura de carga (item 3.3, primeiro passo)
+
+`scripts/load_sweep.py`, 4 motores determinísticos × 6 taxas × 5 sementes. Separa o
+descarte por **recurso** (tarefa sem regra — nenhuma regra manda descartá-la) do
+descarte por regra.
+
+| λ nominal | λ efetiva | tarefas/execução | descarte por recurso | ACR ORACLE | RAM média | bateria mín. |
+|---|---|---|---|---|---|---|
+| 2 | 1,8 | 31,2 | 0,0% | 100,0% | 6,2% | 55,2% |
+| 4 | 3,4 | 65,2 | 0,0% | 100,0% | 12,6% | 31,2% |
+| 8 | 5,8 | 114,8 | 13,8% | 88,5% | 19,4% | 17,6% |
+| 12 | 7,6 | 150,6 | 25,7% | 79,3% | 22,0% | 16,3% |
+| 16 | 8,8 | 176,2 | 36,3% | 74,5% | 22,3% | 15,8% |
+| 24 | 10,4 | 206,4 | 44,4% | 67,2% | 22,7% | 14,6% |
+
+**A bateria é o gargalo, não a RAM.** A RAM nunca passa de 23%: a bateria (2% de SoC por
+tarefa aceita) esgota antes, os satélites param de aceitar, e a RAM nunca enche. Isso
+torna mais preciso o "no RAM bottleneck" do Revisor 3 — neste modelo a RAM *não consegue*
+ser gargalo.
+
+**Onde o comportamento sequencial pode importar:** sob pressão até o ORACLE perde
+conformidade (100% → 88,5% em λ=8 nominal), porque uma tarefa com regra de região chega
+quando o satélite exigido já está abaixo do piso de 20%. Uma política com visão de futuro
+poderia reservar bateria na região que as regras vão exigir. É o regime em que γ>0 tem
+algo a aprender.
+
+### IX.3 A taxa de chegada efetiva não é a declarada (corrigido no camera-ready)
+
+A varredura mostrou que o número de tarefas não acompanha o λ pedido (206 em λ=24/min,
+contra ~480 esperadas; 65,2 em λ=4 contra 80, desvio sistemático de 3,7σ).
+
+Causa no gerador: no máximo uma chegada por passo de 5 s, e a próxima é cronometrada a
+partir do passo que serviu a anterior. O intervalo real é 5·⌈X/5⌉ s, X~Exp(λ), com média
+5/(1−e^(−5λ)). O modelo prevê as contagens com erro abaixo de 1,5% de λ=8 a 24. Em λ=4:
+intervalo médio de **17,6 s**, taxa efetiva **≈3,4/min**, teto absoluto de 12/min.
+
+O código está correto; o artigo é que descrevia o processo errado. Consequências
+corrigidas no camera-ready (commit `07bbc16`):
+
+- a descrição do processo de chegada (§II-B e Tabela I);
+- a Lei de Little: com a taxa efetiva prevê **13,8%**, e o BASELINE (que aceita todas as
+  tarefas) observa 13,7%. A distância em relação aos "~16%" que o artigo tratava como
+  "próxima" vinha toda do λ nominal;
+- **os números que eu havia posto na resposta ao Revisor 2** ("15 s", "6,4%") usavam o λ
+  nominal. Os corretos são 17,6 s e 5,4%. A conclusão não muda.
+
+A varredura acima usa λ nominal no rótulo; a coluna de λ efetiva é a que vale para
+interpretação.
+
+### IX.4 As capacidades de bateria são nominais (corrigido no camera-ready)
+
+Encontrado ao ler a dinâmica do simulador para construir o ambiente sequencial.
+`mec_battery_capacity_wh` é só atribuída e impressa. Toda a dinâmica está em pontos
+percentuais — 2% de SoC por tarefa, +0,083%/passo no sol, −0,040%/passo no eclipse —
+independentemente da capacidade. A "heterogeneidade de hardware" da Tabela I
+(75/50/100 Wh) não tem efeito nenhum: os satélites diferem só no SoC inicial
+(BRAZIL 90%, EUROPE 75%, USA 85%) e na fase orbital.
+
+Explica melhor um dado do próprio artigo: o SAT-2 terminou a 21,8% porque **começou**
+em 75%, e não por ter a menor bateria. Também qualifica um número que eu havia
+acrescentado: os "~720 decisões do LLM por tarefa" convertem 2% de SoC em joules pela
+bateria de 50 Wh — é interpretação, e a mais conservadora. Corrigido no texto (§II-A,
+Tabela I, §V-B), commit `5bf737c`. O verificador ganhou checagem dos SoC inicial e final;
+os finais estavam no artigo desde a submissão sem nenhuma conferência.
+
+### IX.5 O validador do DRL vazava a identidade da regra — erro meu, com efeito no camera-ready
+
+Este é o achado mais importante desta fase, e o erro é meu.
+
+Ao corrigir o `_resolve_action` (Parte III.2), fiz o validador consultar o registro de
+regras pelo token da tarefa para (a) forçar DROP em regra de descarte e (b) exigir a
+região da regra. Mas **o validador passou a saber a regra mesmo quando a política não
+sabe**. Medido por instrumentação, sementes 0–2:
+
+| braço | split | tarefas de descarte | política descartou | forçadas pelo validador |
+|---|---|---|---|---|
+| DRL (cego) | conhecidas | 4 | 3 | 1 |
+| DRL (cego) | inéditas | 5 | 4 | 1 |
+| DRL_ONEHOT | conhecidas | 4 | 4 | 0 |
+| DRL_ONEHOT | inéditas | 5 | 2 | **3** |
+
+Nas regras inéditas, 3 dos 5 descartes "conformes" do DRL_ONEHOT eram do validador.
+A afirmação do camera-ready *"DRL-OH e SLM descartam todas as cinco tarefas de falha —
+um reflexo de descarte"* estava, para o DRL-OH, parcialmente errada.
+
+Há um segundo efeito, mais sutil. Para o braço cego, aceitar uma rota cruzada **porque
+ela coincide com a região da regra oculta** também é vazamento. Então a "correção" que
+fiz no número multi-semente do DRL (29,0% → 34,1%, Parte III.2) **veio do validador que
+vazava**, e o valor honesto provavelmente é o original.
+
+**Três versões do validador, e por que a terceira é a certa:**
+
+1. *Original* — exige sempre a região da tarefa. Honesto para o braço cego (usa só a
+   região, que é observada) e é o que gerou os resultados publicados. Defeito: impede o
+   DRL_ONEHOT de rotear para outra região.
+2. *Minha primeira correção* — consulta a regra. Vaza, como mostrado acima.
+3. *Intermediária* — aceita qualquer região viável em tarefa com anomalia, nos dois
+   braços. Não consulta a regra, mas **muda o braço cego publicado**: a política cega às
+   vezes escolhe outra região numa anomalia, e o validador original anulava essa escolha.
+   Verificado — a corrida canônica divergiu.
+4. *Final* — **rotear para outra região só é permitido a quem consegue distinguir o tipo
+   de regra** (o braço one-hot), e só em tarefa com anomalia. O braço cego volta a ser
+   exatamente o do artigo (bit a bit na corrida canônica) e o DRL_ONEHOT continua em 8/8
+   nas conhecidas. O que decide é o desenho de observação do braço, nunca a regra oculta.
+   O registro de regras fica só na métrica de conformidade, que é onde deve estar.
+
+Todos os resultados de DRL e DRL_ONEHOT (multi-semente, generalização, varredura de carga)
+foram apagados e estão sendo regerados com o validador final. Os números corrigidos
+entram abaixo e no camera-ready.
+
+### IX.6 Ambiente sequencial validado contra o simulador, tarefa a tarefa
+
+`src/schedulers/drl_seq_env.py` (`NTNMECSeqEnv`) — o estado persiste entre decisões:
+aceitar uma tarefa consome 2% de SoC e ocupa 500 MB por 60 s, e o episódio cobre a
+janela inteira. A observação inclui a fase orbital de cada satélite (sin/cos), sem a qual
+"reservar bateria para depois" não teria base observável, e a fração da janela.
+
+**Critério de validação: comparação exata, não estatística.** O ambiente consome o
+gerador aleatório na mesma ordem que o simulador, então com a mesma semente o ORACLE
+dentro dele deve tomar exatamente as mesmas decisões que o `OracleScheduler`
+(`scripts/validate_seq_env.py`).
+
+Primeira execução: 56 de 70 casos idênticos. Os 14 divergentes eram todos sob carga
+alta, e a sequência de tarefas batia exatamente — só a decisão diferia. Causa: o
+simulador entrega aos schedulers `round(SoC, 1)`. Com SoC real de 20,03% o scheduler vê
+20,0 e a checagem "> 20" falha; o ambiente usava o valor bruto. Corrigido separando as
+duas coisas — dinâmica sobre o SoC bruto, decisão e observação sobre o arredondado.
+
+Resultado final: **70 de 70 idênticos** — 6 níveis de carga × 5 sementes, mais 20
+sementes em λ=4 nas regras conhecidas e 20 nas inéditas. O descompasso entre
+distribuição de treino e simulação encontrado no DRL original (IV.4) não se repete.
+
+---
+
 ## Apêndice — Como verificar
 
 Tudo abaixo roda a partir do repositório, sem chave de API (exceto os motores remotos).
