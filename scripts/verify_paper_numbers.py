@@ -183,9 +183,7 @@ def check_generalization(c: Checker, repo: str) -> None:
     n = len(keys)
     c.expect("n pareado nas ineditas", f"$n={n}$, paired across all", src)
     c.expect("sementes das ineditas", f"Unseen: {len(seeds)} seeds", src)
-    for e in engines:
-        k = sum(data[e][x][0] for x in keys)
-        c.expect(f"ineditas {e}", f"{100 * k / n:.1f}\\%", src)
+    unseen = {e: 100 * sum(data[e][x][0] for x in keys) / n for e in engines}
 
     b01 = sum(1 for x in keys if data["LLM"][x][0] == 1 and data["BASELINE"][x][0] == 0)
     b10 = sum(1 for x in keys if data["LLM"][x][0] == 0 and data["BASELINE"][x][0] == 1)
@@ -202,21 +200,41 @@ def check_generalization(c: Checker, repo: str) -> None:
     tot = {e: sum(data[e][x][0] for x in region) for e in engines}
     words = {15: "fifteen", 11: "eleven", 14: "fourteen", 16: "sixteen"}
     c.expect("n de tarefas de regiao", f"on the {words.get(len(region), len(region))} that", src)
-    assert tot["DRL_ONEHOT"] == tot["SLM"], (tot["DRL_ONEHOT"], tot["SLM"])
-    c.expect("DRL-OH e SLM nas de regiao", f"they solve {tot['SLM']} each", src)
+    c.expect("SLM nas de regiao", f"it solves {tot['SLM']}, against", src)
+    # DRL-OH volta ao nivel da heuristica nas ineditas: pares discordantes vs BASELINE.
+    d01 = sum(1 for x in keys if data["DRL_ONEHOT"][x][0] == 1 and data["BASELINE"][x][0] == 0)
+    d10 = sum(1 for x in keys if data["DRL_ONEHOT"][x][0] == 0 and data["BASELINE"][x][0] == 1)
+    assert mcnemar_exact(d01, d10) > 0.05, "DRL-OH deixou de ser indistinguivel do BASELINE"
+    c.expect("DRL-OH vs BASELINE nas ineditas", f"{d01}/{d10} discordant pairs", src)
+    slm_drop = sum(data["SLM"][x][0] for x in keys if x not in region)
+    assert slm_drop == len(keys) - len(region), "SLM deixou de descartar todas as falhas"
     c.expect("BASELINE nas de regiao", f"heuristic's {tot['BASELINE']}", src)
     c.expect("LLM nas de regiao", f"the LLM's {tot['LLM']}", src)
 
     # Coluna das conhecidas: deterministicos em 20 sementes.
     import json as _json
     t20 = os.path.join(repo, "logs/generalization/table20.json")
-    if os.path.exists(t20):
-        seen = _json.load(open(t20))["splits"]["seen"]
-        for e in ("BASELINE", "ORACLE", "DRL", "DRL_ONEHOT"):
-            v = seen["engines"][e]
-            c.expect(f"conhecidas {e}", f"{100 * v['k'] / v['n']:.1f}\\%", t20)
-        lo, hi = seen["engines"]["ORACLE"]["wilson"]
-        c.expect("IC do ORACLE nas conhecidas", f"{100 * lo:.1f}--100", t20)
+    seen_tab = _json.load(open(t20))["splits"]["seen"]
+    seen = {e: 100 * v["k"] / v["n"] for e, v in seen_tab["engines"].items()}
+    lo, hi = seen_tab["engines"]["ORACLE"]["wilson"]
+    c.expect("IC do ORACLE nas conhecidas", f"{100 * lo:.1f}--100", t20)
+    # SLM e LLM na coluna das conhecidas vem da corrida canonica (n=8, com adaga).
+    canon = compliance_table(load_runs(os.path.join(repo, "logs")),
+                             paired_keys(load_runs(os.path.join(repo, "logs"))))
+    for e in ("SLM", "LLM"):
+        a = canon[e]["acr"]; seen[e] = 100 * a["k"] / a["n"]
+
+    # LINHA INTEIRA de cada motor. Checar numeros soltos deixava passar uma tabela
+    # errada sempre que o mesmo valor aparecia na prosa — o teste negativo que
+    # reintroduziu o 50,0% antigo do DRL-OH na tabela passou despercebido assim.
+    label = {"BASELINE": "BASELINE", "ORACLE": "ORACLE", "DRL": "DRL",
+             "DRL_ONEHOT": "DRL-OH", "SLM": "SLM", "LLM": "LLM"}
+    for e in engines:
+        dag = "$^{\\dagger}$" if e in ("SLM", "LLM") else ""
+        u = f"{unseen[e]:.1f}\\%"
+        u = f"\\textbf{{{u}}}" if e == "LLM" else u
+        c.expect(f"Tabela IV, linha {label[e]}",
+                 f"{label[e]} & {seen[e]:.1f}\\%{dag} & {u} \\\\", src)
 
 
 def check_reviewer2_budgets(c: Checker) -> None:

@@ -207,7 +207,7 @@ throughput alone. This paper fills that gap with the following contributions:
     observation space caps expected compliance at $1/3$---the three rule types
     are equiprobable and only the mandatory-discard one is identifiable from a
     single bit---and verify over 20 seeds that the agent sits at that bound
-    (34.1\%, 95\%~CI 26.7--42.3). The limit is therefore the observation space,
+    (29.0\%, 95\%~CI 22.1--37.0). The limit is therefore the observation space,
     not DRL as a paradigm nor the training budget.
   \item An information-parity evaluation: a rule table and a DRL agent given
     the rule type match the LLM on design-time constraints, but on unseen
@@ -699,8 +699,8 @@ ranking.
 \paragraph*{Multi-seed replication}
 For the deterministic engines we ran 20 independent seeds (1{,}337 paired tasks,
 138 anomaly-carrying). BASELINE reaches 26.8\% ACR (Wilson 95\%~CI 20.1--34.8)
-and DRL 34.1\% (26.7--42.3), a statistically null difference (McNemar
-$p=0.320$): the single-run DRL advantage does not replicate. A policy that cannot
+and DRL 29.0\% (22.1--37.0), a statistically null difference (McNemar
+$p=0.818$): the single-run DRL advantage does not replicate. A policy that cannot
 read the rule does no better, in expectation, than the chance that one fixed
 action is right; with three equiprobable rule types that bound is $1/3$, and the
 pooled DRL figure sits on it. The limitation is the observation space, not DRL
@@ -783,7 +783,8 @@ The comparison above is asymmetric: DRL sees one bit while the language models
 read the rule. To separate information from capability we add two control arms
 and a second rule set. ORACLE is a hand-coded table of the three design-time
 rules, with the greedy heuristic as fallback; DRL-OH is the same DQN retrained
-with a one-hot encoding of those rules (16-dimensional state). The unseen set
+with a one-hot encoding of those rules (16-dimensional state) and, unlike the
+blind agent, allowed to route across regions when a constraint is flagged. The unseen set
 holds six constraints absent from every engine's design---US HIPAA and ITAR,
 Brazilian LGPD, an EU data-residency paraphrase and two new hardware
 faults---delivered to the task only as a natural-language sentence. Its share of
@@ -801,8 +802,8 @@ the same in both.
 \midrule
 BASELINE & 26.8\% & 30.0\% \\
 ORACLE   & 100.0\% & 30.0\% \\
-DRL      & 34.1\% & 30.0\% \\
-DRL-OH   & 100.0\% & 50.0\% \\
+DRL      & 29.0\% & 30.0\% \\
+DRL-OH   & 100.0\% & 35.0\% \\
 SLM      & 75.0\%$^{\dagger}$ & 50.0\% \\
 LLM      & 100.0\%$^{\dagger}$ & \textbf{100.0\%} \\
 \bottomrule
@@ -820,10 +821,12 @@ the rules suffices, and a language model is not required. On unseen rules the
 picture inverts. ORACLE takes exactly the same decision as BASELINE on every task
 (0~discordant pairs)---it does not fail loudly, it silently stops noticing the
 obligation. Only the LLM remains at full compliance (20/20; McNemar against
-BASELINE 14/0, $p=0.0001$). DRL-OH and SLM both reach 50\%, but decomposing by
-obligation shows a discard reflex rather than rule reading: both discard all
-five fault tasks, yet on the fifteen that require routing to a specific region
-they solve 5 each, against the heuristic's 6 and the LLM's 15. The distinction
+BASELINE 14/0, $p=0.0001$). DRL-OH returns to heuristic level (35.0\%; 3/2
+discordant pairs, $p=1.000$): with its rule-type vector zeroed it has nothing to
+act on. The SLM reaches 50\%, but decomposing by obligation shows a discard
+reflex rather than rule reading: it discards all five fault tasks, yet on the
+fifteen that require routing to a specific region it solves 5, against the
+heuristic's 6 and the LLM's 15. The distinction
 that matters is therefore which language model, not language model versus
 numerical optimiser.
 
@@ -837,8 +840,8 @@ arms that equalise information. On the design-time rules the LLM resolved every
 constraint (8/8, $p=0.031$ against the heuristic), but so do a hand-coded rule
 table and a DRL agent given the rule type. What separates the LLM is
 generalisation: on unseen natural-language constraints it stayed at 20/20, while
-the rule table reverted to the heuristic and both DRL-OH and the SLM fell back
-on a discard reflex.
+the rule table and the informed DRL agent reverted to heuristic level and the
+SLM fell back on a discard reflex.
 
 Three trade-offs define where each paradigm fits:
 (1)~\emph{Enumerated vs.\ open-ended constraints}: when every rule is known at
@@ -859,7 +862,7 @@ binds: drop-rate and utilisation findings describe an unsaturated regime, and th
 single-step ($\gamma=0$) formulation is appropriate precisely because temporal
 coupling is weak. The unseen-rule evaluation uses six rules and three seeds for
 the language models---enough to separate the LLM from every other engine, not
-the SLM from DRL-OH. Per-decision energy is a declared model, not a
+to resolve differences among the rest. Per-decision energy is a declared model, not a
 measurement. And the SLM is emulated through a remote API with a benchmark
 latency rather than run on an NPU.
 
