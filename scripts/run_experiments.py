@@ -79,12 +79,14 @@ def is_done(outdir: str, seed: int, engine: str) -> bool:
         return False
 
 
-def execute(seed: int, engine: str, outdir: str, config: str, timeout: int) -> dict:
+def execute(seed: int, engine: str, outdir: str, config: str, timeout: int,
+            rule_split: str = "seen") -> dict:
     """Roda uma combinacao e devolve o seu registro para o manifesto."""
     target = os.path.join(outdir, f"seed{seed}")
     os.makedirs(target, exist_ok=True)
     cmd = [sys.executable, "main.py", "--engine", engine,
-           "--seed", str(seed), "--outdir", target, "--config", config]
+           "--seed", str(seed), "--outdir", target, "--config", config,
+           "--rule-split", rule_split]
 
     started = time.time()
     try:
@@ -99,7 +101,8 @@ def execute(seed: int, engine: str, outdir: str, config: str, timeout: int) -> d
     if ok:
         with open(run_paths(outdir, seed, engine)[1]) as fh:
             tasks = json.load(fh).get("total_tasks")
-    return {"seed": seed, "engine": engine, "ok": ok, "returncode": rc,
+    return {"seed": seed, "engine": engine, "rule_split": rule_split,
+            "ok": ok, "returncode": rc,
             "seconds": round(elapsed, 1), "total_tasks": tasks,
             "finished_at": dt.datetime.now().isoformat(timespec="seconds"),
             "tail": None if ok else tail.strip()[-400:]}
@@ -128,6 +131,8 @@ def main() -> int:
     ap.add_argument("--engines", nargs="+", default=ALL_ENGINES, choices=ALL_ENGINES)
     ap.add_argument("--outdir", default="logs/multiseed")
     ap.add_argument("--config", default="configs/config.json")
+    ap.add_argument("--rule-split", default="seen", choices=["seen", "heldout", "all"],
+                    help="conjunto de restricoes semanticas (default: seen)")
     ap.add_argument("--timeout", type=int, default=3600, help="limite por execucao, em segundos")
     ap.add_argument("--max-api-runs", type=int, default=None,
                     help="teto de execucoes de SLM/LLM nesta invocacao (cota diaria)")
@@ -180,7 +185,7 @@ def main() -> int:
             break
 
         print(f"  -> seed={seed:3d} engine={engine:9s} ... ", end="", flush=True)
-        record = execute(seed, engine, outdir, args.config, args.timeout)
+        record = execute(seed, engine, outdir, args.config, args.timeout, args.rule_split)
         manifest["runs"].append(record)
         save_manifest(manifest_path, manifest)   # grava a cada passo: queda nao perde historico
 
