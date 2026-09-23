@@ -5,7 +5,7 @@
   "success_rate": 0.8873,
   "drop_count": 8,
   "drop_rate": 0.1127,
-  "avg_latency_ms": 0.214,
+  "avg_latency_ms": 0.219,
   "total_joules": 0.355,
   "joules_per_decision": 0.005,
   "anomaly_task_count": 8,

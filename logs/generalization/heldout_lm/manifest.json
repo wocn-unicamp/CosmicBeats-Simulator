@@ -1,0 +1,15 @@
+{
+  "runs": [
+    {
+      "seed": 0,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1378.7,
+      "total_tasks": 69,
+      "finished_at": "2026-09-22T23:16:06",
+      "tail": null
+    }
+  ]
+}

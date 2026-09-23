@@ -122,10 +122,18 @@ def check_multiseed(c: Checker, logs_dir: str) -> None:
         if {r["a"], r["b"]} == {"BASELINE", "DRL"}:
             c.expect("McNemar multi-semente", f"$p={r['p']:.3f}$", src)
 
+    # O teto de uma politica cega e 1/3 em ESPERANCA (tres tipos de regra
+    # equiprovaveis, so o de descarte e identificavel a partir de um bit). Antes
+    # este check usava a fracao de descarte REALIZADA na amostra como se fosse o
+    # teto; e uma estimativa ruidosa dele, e a distincao passou a importar quando
+    # a correcao do _resolve_action levou o DRL acima da fracao realizada.
     bd = anomaly_breakdown(runs, keys)["BASELINE"]
     total = sum(n for _, n in bd.values())
     hw = next(n for t, (_, n) in bd.items() if "hardware" in t)
-    c.expect("teto da politica cega", f"{hw / total * 100:.1f}\\% ({hw} of {total})", src)
+    assert 0.20 < hw / total < 0.45, (
+        f"fracao de regras de descarte ({hw}/{total}) longe de 1/3 — o corpus "
+        f"deixou de ser equilibrado e o argumento do teto nao vale")
+    c.expect("teto cego declarado como 1/3", r"bound is $1/3$", src)
 
 
 def main() -> int:
