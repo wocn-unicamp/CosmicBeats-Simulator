@@ -75,6 +75,7 @@ SATS = (
 REGION_IDX = {"USA": 0, "BRAZIL": 1, "EUROPE": 2}       # one-hot da regiao (= NTNMECEnv)
 SAT_OF_REGION = {s["region"]: i for i, s in enumerate(SATS)}
 DROP = 3
+TRAIN_SEED_OFFSET = 1000   # sementes de treino nunca coincidem com as de teste
 
 
 class NTNMECSeqEnv(gym.Env):
@@ -188,7 +189,11 @@ class NTNMECSeqEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         # random.Random(s) gera a mesma sequencia que random.seed(s) no simulador.
-        s = seed if seed is not None else int(self.np_random.integers(0, 2**31 - 1))
+        # Sem semente explicita (treino), sorteia sempre >= TRAIN_SEED_OFFSET: as
+        # sementes de teste (0-19, as mesmas do simulador) ficam garantidamente
+        # fora do treino, e nao apenas com alta probabilidade.
+        s = seed if seed is not None else TRAIN_SEED_OFFSET + int(
+            self.np_random.integers(0, 2**31 - 1 - TRAIN_SEED_OFFSET))
         self.rng = random.Random(s)
         self.soc = [sat["soc0"] for sat in SATS]
         self.ram = [RAM_TOTAL_MB] * len(SATS)
