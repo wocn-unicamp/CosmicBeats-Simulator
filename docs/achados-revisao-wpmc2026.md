@@ -827,6 +827,46 @@ resposta tem três partes, todas com dado:
 **Limites.** Uma semente de treino por configuração (a variância entre treinos não está
 medida); agentes treinados só em λ=12; o valor de w é escolha de pesquisa.
 
+### IX.10 Estado ao encerrar a sessão de 23/09 e como retomar
+
+**Rodando em segundo plano (destacado da sessão; notebook precisa ficar na tomada):**
+
+| frente | saída | log |
+|---|---|---|
+| SLM instrumentado, regras inéditas, sementes 0–9 | `logs/generalization/heldout_lm_v2/` | `~/cosmicbeats-slm-v2.log` |
+| Vigia do LLM: testa a API a cada 10 min e roda as sementes 0–9 quando sair do 503 | idem | `~/cosmicbeats-llm-v2.log` |
+| 32 réplicas de treino (sementes 43 e 44 da grade de 16 agentes) | `models/seq/*_s43`, `*_s44` | — |
+
+Se algo cair, retomar sem refazer nada do que completou:
+
+```bash
+venv/bin/python scripts/run_experiments.py --seeds 0-9 --engines SLM --rule-split heldout --outdir logs/generalization/heldout_lm_v2
+venv/bin/python scripts/run_experiments.py --seeds 0-9 --engines LLM --rule-split heldout --outdir logs/generalization/heldout_lm_v2
+```
+
+**Próximos passos, em ordem:**
+
+1. **Quando o v2 terminar:** tabela pareada dos seis motores nas regras inéditas usando só
+   decisões com `decision_source = model`, e também a versão operacional (com as falhas).
+   Comparar as sementes 0–2 do v2 com as antigas. Decide se a frase "o LLM mantém 20/20"
+   do camera-ready se sustenta. **Se a API do LLM não voltar até quinta à noite,
+   suavizar essa frase no camera-ready por precaução** — o resultado central (o LLM é o
+   único que lê as regras de região) se sustenta de qualquer modo.
+2. **Quando as réplicas terminarem:** `scripts/frontier_seq.py --rate 12 --train-seed 43`
+   e `--train-seed 44`. Se o ganho de +3 a +5 pp aparecer nas três sementes, a IX.9 se
+   confirma; se não, reportar como dependente do treino.
+3. Para a versão estendida: treinar os agentes sequenciais também em λ=8; decidir com o
+   orientador o valor de w; ampliar o corpus de regras inéditas (6 é pouco); item 3.2
+   (energia medida por RAPL, exige sudo — perdeu prioridade pela VII.2).
+
+**Decisões que dependem do orientador (reunião de sexta):** a tese reformulada (VIII.1,
+IX.5); o posicionamento do SLM, que nas regras inéditas se comporta como reflexo de
+descarte; quanto do item 3.3 entra na versão estendida; e o valor de w.
+
+**Estado das branches:** `camera-ready/wpmc2026-reviewer-response` contém a versão para
+submissão (6 páginas, verificador 58/58, PDF em `paper/revised-camera-ready.pdf`, prazo
+30/09). `extended/journal-version` contém tudo isso mais o trabalho estendido.
+
 ---
 
 ## Apêndice — Como verificar
