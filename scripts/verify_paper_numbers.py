@@ -29,6 +29,9 @@ from analyze_results import (  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Sementes da coluna "regras ineditas" da Tabela IV do camera-ready.
+PAPER_HELDOUT_SEEDS = [0, 1, 2]
+
 
 class Checker:
     def __init__(self, tex: str):
@@ -155,7 +158,10 @@ def check_generalization(c: Checker, repo: str) -> None:
     if not os.path.isdir(lm_dir):
         print("  (pulando generalizacao: sem dados de SLM/LLM nas ineditas)")
         return
-    seeds = sorted(int(d[4:]) for d in os.listdir(lm_dir) if d.startswith("seed"))
+    # As sementes que o ARTIGO usa, fixadas. Ler "tudo o que houver no diretorio"
+    # faria o resultado mudar sozinho quando a campanha da versao estendida
+    # depositar sementes novas — o mesmo erro que ja colapsou o pareamento uma vez.
+    seeds = PAPER_HELDOUT_SEEDS
     data = {e: {} for e in engines}
     for s_ in seeds:
         for e in engines:

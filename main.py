@@ -39,6 +39,11 @@ if __name__ == "__main__":
                         choices=["seen", "heldout", "all"],
                         help="Conjunto de restricoes semanticas (default: seen)")
 
+    # Argumento 6: taxa de chegada. 4/min reproduz o artigo; valores maiores
+    # servem para achar o ponto em que bateria e RAM passam a limitar.
+    parser.add_argument('--arrival-rate', type=float, default=4.0,
+                        help="Taxa de chegada Poisson em tarefas/min (default: 4)")
+
     parser.add_argument('--outdir', type=str, default="logs",
                         help="Diretorio de saida das metricas (default: logs)")
 
@@ -55,6 +60,7 @@ if __name__ == "__main__":
     os.environ["MEC_SEED"]   = str(args.seed)
     os.environ["MEC_OUTDIR"] = args.outdir
     os.environ["MEC_RULE_SPLIT"] = args.rule_split
+    os.environ["MEC_ARRIVAL_RATE"] = str(args.arrival_rate)
     
     print("\n" + "="*50)
     print(f"🚀 INICIANDO COSMICBEATS")

@@ -63,7 +63,9 @@ class MECOrchestrator:
         self.mec_satellites = []
         self.mec_tasks_dropped = 0
         self.next_task_time = -1.0
-        self.lambda_rate   = 4.0 / 60.0   # 4 tarefas/minuto
+        # Taxa de chegada Poisson em tarefas/min; 4 reproduz o artigo. Exposta para
+        # a varredura de carga do item 3.3 (em que ponto cada recurso passa a limitar).
+        self.lambda_rate   = float(os.environ.get("MEC_ARRIVAL_RATE", "4.0")) / 60.0
 
         # MEC_RULE_SPLIT: "seen" (padrão, reproduz o artigo), "heldout" (só
         # restrições inéditas) ou "all" (mistura as duas).
