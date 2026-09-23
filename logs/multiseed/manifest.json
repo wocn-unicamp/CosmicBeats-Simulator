@@ -649,6 +649,226 @@
       "total_tasks": 76,
       "finished_at": "2026-09-22T23:17:52",
       "tail": null
+    },
+    {
+      "seed": 0,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.2,
+      "total_tasks": 69,
+      "finished_at": "2026-09-23T10:29:08",
+      "tail": null
+    },
+    {
+      "seed": 1,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.4,
+      "total_tasks": 58,
+      "finished_at": "2026-09-23T10:29:14",
+      "tail": null
+    },
+    {
+      "seed": 2,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 71,
+      "finished_at": "2026-09-23T10:29:19",
+      "tail": null
+    },
+    {
+      "seed": 3,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.4,
+      "total_tasks": 61,
+      "finished_at": "2026-09-23T10:29:24",
+      "tail": null
+    },
+    {
+      "seed": 4,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.4,
+      "total_tasks": 67,
+      "finished_at": "2026-09-23T10:29:30",
+      "tail": null
+    },
+    {
+      "seed": 5,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.5,
+      "total_tasks": 66,
+      "finished_at": "2026-09-23T10:29:35",
+      "tail": null
+    },
+    {
+      "seed": 6,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 60,
+      "finished_at": "2026-09-23T10:29:41",
+      "tail": null
+    },
+    {
+      "seed": 7,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.1,
+      "total_tasks": 78,
+      "finished_at": "2026-09-23T10:29:46",
+      "tail": null
+    },
+    {
+      "seed": 8,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 67,
+      "finished_at": "2026-09-23T10:29:51",
+      "tail": null
+    },
+    {
+      "seed": 9,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 69,
+      "finished_at": "2026-09-23T10:29:56",
+      "tail": null
+    },
+    {
+      "seed": 10,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.4,
+      "total_tasks": 52,
+      "finished_at": "2026-09-23T10:30:02",
+      "tail": null
+    },
+    {
+      "seed": 11,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.8,
+      "total_tasks": 71,
+      "finished_at": "2026-09-23T10:30:08",
+      "tail": null
+    },
+    {
+      "seed": 12,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 65,
+      "finished_at": "2026-09-23T10:30:13",
+      "tail": null
+    },
+    {
+      "seed": 13,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.3,
+      "total_tasks": 73,
+      "finished_at": "2026-09-23T10:30:18",
+      "tail": null
+    },
+    {
+      "seed": 14,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.2,
+      "total_tasks": 68,
+      "finished_at": "2026-09-23T10:30:23",
+      "tail": null
+    },
+    {
+      "seed": 15,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.2,
+      "total_tasks": 55,
+      "finished_at": "2026-09-23T10:30:29",
+      "tail": null
+    },
+    {
+      "seed": 16,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.4,
+      "total_tasks": 76,
+      "finished_at": "2026-09-23T10:30:34",
+      "tail": null
+    },
+    {
+      "seed": 17,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.2,
+      "total_tasks": 63,
+      "finished_at": "2026-09-23T10:30:39",
+      "tail": null
+    },
+    {
+      "seed": 18,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.0,
+      "total_tasks": 72,
+      "finished_at": "2026-09-23T10:30:44",
+      "tail": null
+    },
+    {
+      "seed": 19,
+      "engine": "DRL",
+      "rule_split": "seen",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5.1,
+      "total_tasks": 76,
+      "finished_at": "2026-09-23T10:30:49",
+      "tail": null
     }
   ]
 }
