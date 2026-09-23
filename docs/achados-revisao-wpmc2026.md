@@ -885,6 +885,45 @@ estimativa dela; os agentes continuam treinados só em λ=12; o bootstrap reamos
 sementes de teste, não de treino. Por isso a robustez vem da replicação (3 de 3), e não de
 um intervalo que inclua a variância de treino.
 
+### IX.9.2 SLM instrumentado — parcial, sementes 0–3 (23/09, 14h50)
+
+A campanha v2 grava `decision_source`. Com isso dá para separar a decisão do modelo das
+falhas, que nos dados antigos apareciam como DROP (IX.8). Resultados das sementes 0–3,
+com o mesmo cenário das execuções antigas (sequência de tarefas idêntica, conferida
+semente a semente):
+
+| origem da decisão | tarefas sem regra | tarefas com regra |
+|---|---|---|
+| `model` | 227 | 20 |
+| `parse_failure` | 0 | **5** |
+| `api_failure` | 5 | 0 |
+
+**Reprodutibilidade:** 24 das 25 tarefas com regra têm o mesmo desfecho de conformidade
+que na execução antiga. A exceção é uma tarefa HIPAA da semente 2: antes DROP (não
+conforme), agora roteada para o satélite certo. Mesmo com temperatura 0, a API não é
+bit-a-bit determinística. O efeito é pequeno, mas existe.
+
+**Achado:** todas as 5 falhas de parse caíram em tarefas **com regra** (5 de 25), e
+nenhuma nas 232 sem regra. Cada falha de parse significa 6 tentativas sem JSON aproveitável,
+e com temperatura 0 repetir não ajuda. Hipótese a testar: o raciocínio da Gemma consome o
+orçamento de `maxOutputTokens = 1024` nas tarefas que exigem ler a regra, e a resposta vem
+cortada. O teste é gravar o `finishReason` da API (`MAX_TOKENS` confirmaria). **Isso não foi
+alterado agora**, porque o módulo é recarregado a cada semente e mudá-lo no meio da
+campanha misturaria duas configurações.
+
+**Consequência para a leitura do SLM:**
+
+| métrica, sementes 0–3 | valor |
+|---|---|
+| ACR operacional (falha conta como não conforme) | 14/25 = 56% |
+| ACR só com decisões do modelo | 14/20 = 70% |
+| execução antiga, mesmas tarefas | 13/25 = 52% |
+
+Parte do que a IX.5 chamou de "reflexo de descarte" do SLM é falha de formato, não escolha
+do modelo. As duas leituras devem ir para a versão estendida. A operacional mede o sistema
+como ele é; a outra mede a capacidade do modelo. Esperar as sementes 4–9 antes de
+concluir: com n = 25 os intervalos são largos.
+
 ### IX.10 Estado ao encerrar a sessão de 23/09 e como retomar
 
 **Rodando em segundo plano (destacado da sessão; notebook precisa ficar na tomada):**
@@ -921,6 +960,8 @@ venv/bin/python scripts/run_experiments.py --seeds 0-9 --engines LLM --rule-spli
 2. ~~Réplicas de treino~~ **feito (IX.9.1):** o ganho em w=0,05 se confirma em 3 de 3
    sementes contra o envelope conjunto; os ganhos em w=0,1 e w=0,15 dependem do treino.
    Para a reunião: levar a tabela da IX.9.1 e a formulação recomendada.
+   *Depois que a campanha do SLM terminar:* gravar `finishReason` no `slm_scheduler.py` e
+   repetir as tarefas com `parse_failure` para testar a hipótese da IX.9.2.
 3. Para a versão estendida: treinar os agentes sequenciais também em λ=8; decidir com o
    orientador o valor de w; ampliar o corpus de regras inéditas (6 é pouco); item 3.2
    (energia medida por RAPL, exige sudo — perdeu prioridade pela VII.2).
