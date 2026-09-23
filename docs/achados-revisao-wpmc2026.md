@@ -23,9 +23,11 @@ Sete achados mudam o que podemos afirmar. Em ordem de gravidade:
 3. **Com n=8 anomalias, só uma das seis comparações é estatisticamente significativa.**
    A ordenação de quatro vias que o artigo afirmava não se sustentava.
 4. **A vantagem do DRL sobre o BASELINE não replica** em 20 sementes.
-5. **Dois bugs no código**, um deles anulando exatamente o experimento que o Revisor 3
-   pediu. Nenhum afeta os resultados originais publicados; um afetou um resultado que
-   nós mesmos acrescentamos na revisão.
+5. **Bugs no código — e um erro meu ao corrigi-los.** Um bug anulava exatamente o
+   experimento que o Revisor 3 pediu. A minha primeira correção fez o validador do DRL
+   consultar a regra oculta, o que vazava informação e inflou números que cheguei a
+   publicar no camera-ready. Encontrado e corrigido (Parte IX.5); os resultados
+   originais do artigo nunca foram afetados.
 6. **O Revisor 3 está certo, e agora temos a medida disso:** com as regras conhecidas em
    tempo de projeto, uma tabela de três entradas e um DRL com paridade de informação
    chegam ambos a 100%. Um modelo de linguagem não se justifica nessa escala.
@@ -200,6 +202,8 @@ Corrigido, o braço de paridade vai a **8/8**.
   40/138 (29,0%) para **47/138 (34,1%)**, e o McNemar de p=0,818 para p=0,320.
   A conclusão do parágrafo não muda — a vantagem sobre o BASELINE continua sem replicar —
   mas os números foram corrigidos no `.tex`.
+> ⚠ **Corrigido depois (Parte IX.5).** Esta "correção" (29,0% → 34,1%) veio do validador que vazava. O valor honesto é o original: **40/138 = 29,0%, p = 0,818**.
+
 
 ### III.3 Erros de método na análise, corrigidos
 
@@ -225,6 +229,8 @@ Corrigido, o braço de paridade vai a **8/8**.
 
 McNemar pareado: **p = 0,320**. A vantagem do DRL sobre o BASELINE observada na corrida
 única (37,5% vs 25,0%) **não replica**.
+> ⚠ **Corrigido depois (Parte IX.5).** Com o validador corrigido: DRL **40/138 = 29,0% [22,1–37,0], p = 0,818**. A conclusão (não replica) se mantém; 29,0% está dentro do limite de 1/3.
+
 
 O que replica, e mais nitidamente, é o argumento information-theoretic do artigo: uma
 política que não consegue ler a regra não pode fazer melhor, em esperança, do que a
@@ -258,6 +264,8 @@ conclusão.
 | **ORACLE** (tabela de regras) | **100,0%** [97,3–100] | 24,6% [18,2–32,4] | **−75,4 pp** |
 | DRL (cego) | 34,1% [26,7–42,3] | 37,7% [30,0–46,0] | +3,6 pp |
 | **DRL_ONEHOT** (paridade) | **100,0%** [97,3–100] | 47,8% [39,7–56,1] | −52,2 pp |
+> ⚠ **Corrigido depois (Parte IX.5).** Com o validador corrigido: DRL 29,0% (conhecidas) e 36,2% (inéditas); **DRL_ONEHOT 23,2% nas inéditas** — abaixo do BASELINE (24,6%), McNemar 19/21, p = 0,87. As demais linhas não mudam.
+
 
 **Duas leituras:**
 
@@ -270,6 +278,8 @@ conclusão.
    perceber que havia uma obrigação.
 
 ### IV.3 Caveat obrigatório sobre o DRL com paridade
+> ⚠ **Corrigido depois (Parte IX.5).** Esta seção inteira está superada. O "reflexo de descarte" do DRL_ONEHOT nas regras inéditas era, em boa parte, o validador forçando o descarte. Sem o vazamento, o DRL_ONEHOT fica no nível do BASELINE nas inéditas.
+
 
 Os 47,8% do DRL_ONEHOT nas inéditas são estatisticamente significativos contra o
 BASELINE (p = 0,0003). **Reportar só isso seria enganoso.** Decompondo:
@@ -321,6 +331,8 @@ restrições que nenhum deles viu em tempo de projeto.
 | ORACLE | 6/20 = 30,0% | [14,5 – 51,9] | 0/0, p = 1,000 |
 | DRL (cego) | 6/20 = 30,0% | [14,5 – 51,9] | 5/5, p = 1,000 |
 | DRL_ONEHOT | 10/20 = 50,0% | [29,9 – 70,1] | 6/2, p = 0,289 |
+> ⚠ **Corrigido depois (Parte IX.5).** Com o validador corrigido: **DRL_ONEHOT 7/20 = 35,0%**, McNemar vs BASELINE 3/2, p = 1,0; descarte 2/5 (não 5/5). O reflexo de descarte é real no **SLM** (5/5), que nunca passou por validador.
+
 | SLM | 10/20 = 50,0% | [29,9 – 70,1] | 5/1, p = 0,219 |
 | **LLM** | **20/20 = 100,0%** | [83,9 – 100,0] | **14/0, p = 0,0001** |
 
@@ -450,6 +462,8 @@ para **54 valores** conferidos contra os dados.
 
 - **Nova Seção V-D e Tabela IV** — paridade de informação e restrições inéditas. É a
   resposta direta ao Revisor 3, antes presente só como "trabalho em andamento".
+> ⚠ **Corrigido depois (Parte IX.5).** Os valores da Tabela IV foram depois corrigidos: DRL 29,0% nas conhecidas; DRL-OH 35,0% nas inéditas.
+
 - **Resposta ao Revisor 2 sobre latência** (§V-C): a janela operante é o intervalo entre
   chegadas, 15 s; o LLM usa 6,4% dela. Orçamentos de milissegundos — típicos de
   escalonamento de enlace, não de alocação de tarefa — excluiriam o LLM. O abstract
@@ -612,8 +626,34 @@ vazava**, e o valor honesto provavelmente é o original.
    O registro de regras fica só na métrica de conformidade, que é onde deve estar.
 
 Todos os resultados de DRL e DRL_ONEHOT (multi-semente, generalização, varredura de carga)
-foram apagados e estão sendo regerados com o validador final. Os números corrigidos
-entram abaixo e no camera-ready.
+foram apagados e regerados com o validador final.
+
+**Resultados corrigidos** (20 sementes; as duas últimas linhas, 3 sementes pareadas entre
+os seis motores, são as da Tabela IV do camera-ready):
+
+| medida | com vazamento | sem vazamento |
+|---|---|---|
+| DRL multi-semente, conhecidas | 34,1%, p=0,320 | **29,0% [22,1–37,0], p=0,818** |
+| DRL_ONEHOT, conhecidas | 100% | 100% |
+| DRL, inéditas | 37,7% | 36,2% |
+| DRL_ONEHOT, inéditas | 47,8% | **23,2%** (BASELINE: 24,6%; p=0,87) |
+| Tabela IV — DRL-OH, inéditas (n=20) | 50,0% | **35,0%** (vs BASELINE 3/2, p=1,0) |
+| Tabela IV — descartes do DRL-OH | 5/5 | **2/5** |
+
+O número do DRL multi-semente volta **exatamente** ao da era do artigo, o que confirma o
+diagnóstico. Com isso, a tese fica mais nítida, não mais fraca: nas regras inéditas,
+tabela de regras, DRL cego e DRL com paridade ficam **todos no nível da heurística**; o
+SLM fica no reflexo de descarte; **só o LLM lê a regra**.
+
+Corrigido no camera-ready (commits `c64a197`, `b8d8ca5`): contribuição 2, parágrafo
+multi-semente, Tabela IV, Seção V-D, conclusão e *Limitations*.
+
+**Lição de método sobre o próprio verificador.** Ao corrigir a Tabela IV, fiz um teste
+negativo reintroduzindo o valor antigo (50,0%) na tabela — e o verificador **não
+percebeu**. Ele conferia cada número em qualquer ponto do texto, e "35,0%" continuava na
+prosa. A Tabela IV passou a ser conferida **linha a linha**; a mesma adulteração agora é
+detectada. É um limite do verificador que vale registrar: checagem por substring garante
+que o número existe no texto, não que está no lugar certo.
 
 ### IX.6 Ambiente sequencial validado contra o simulador, tarefa a tarefa
 
@@ -636,6 +676,60 @@ duas coisas — dinâmica sobre o SoC bruto, decisão e observação sobre o arr
 Resultado final: **70 de 70 idênticos** — 6 níveis de carga × 5 sementes, mais 20
 sementes em λ=4 nas regras conhecidas e 20 nas inéditas. O descompasso entre
 distribuição de treino e simulação encontrado no DRL original (IV.4) não se repete.
+
+### IX.7 Agentes sequenciais: primeiros resultados
+
+Treino em λ=12 nominal (7,6 efetiva, regime em que a bateria limita), 300 mil passos,
+DQN com os hiperparâmetros do artigo exceto γ. Avaliação pareada nas sementes de teste
+0–19 (disjuntas do treino), idêntica ao simulador pela validação da IX.6.
+
+**λ = 12 nominal — 313 tarefas com regra, 2.704 sem:**
+
+| política | ACR | IC 95% | throughput | McNemar vs ORACLE |
+|---|---|---|---|---|
+| ORACLE | 84,3% | [79,9–88,0] | 74,9% | — |
+| γ=0,99, w=0,25 | **93,9%** | [90,7–96,1] | 72,7% | 30/0, p<0,0001 |
+| γ=0, w=0,25 | 88,5% | [84,5–91,6] | 74,1% | 13/0, p=0,0002 |
+| γ=0,99, w=1 | 85,6% | [81,3–89,1] | 74,6% | 4/0, p=0,125 |
+| γ=0, w=1 | 84,3% | [79,9–88,0] | 74,9% | 0/0 (≡ ORACLE) |
+| γ=0,99, w=0 | 100% | — | 22,1% | degenerado |
+| γ=0, w=0 | 99,4% | — | 33,1% | degenerado |
+
+Em λ=4 todos empatam em 100% de ACR (sem pressão, não há o que planejar); em λ=8 as
+diferenças já aparecem, menores.
+
+**w = 0 é degenerado, como previsto na IX.6:** sem valor para o throughput, o agente
+descarta a maior parte do tráfego comum para guardar bateria. Isso confirma que a
+recompensa precisa de peso explícito de throughput e que o valor de w é escolha de
+pesquisa.
+
+**Por que o γ=0 também supera o ORACLE — artefato, não planejamento.** Um agente míope
+não tem motivo para economizar bateria. Medindo a taxa de descarte de tarefas comuns
+**viáveis** por faixa de SoC do satélite da região (sementes 0–19, w=0,25):
+
+| SoC | γ=0 descarta | γ=0,99 descarta |
+|---|---|---|
+| 20–22% | 63,3% | 66,5% |
+| 22–25% | **0,0%** | 61,8% |
+| 25–30% | **0,0%** | 41,8% |
+| 30–40% | **0,0%** | 8,0% |
+| > 40% | 0,0% | 0,5% |
+
+O γ=0 descarta **só** na faixa colada ao piso. É efeito da aproximação de função na
+fronteira de viabilidade: 20,1% é viável e 19,9% é inviável (penalidade −0,1), e a rede
+não separa bem os dois. O agente "erra para o lado seguro" e poupa bateria por acidente,
+justamente onde ela é escassa. Isso explica o ganho sobre o ORACLE e **não** deve ser lido
+como previsão.
+
+**O γ=0,99 aprende uma política de reserva graduada:** retém tráfego comum de forma
+progressiva conforme a bateria cai, começando bem acima do piso (42% de descarte já em
+25–30%, onde o γ=0 não descarta nada). É o comportamento sequencial que o Revisor 3
+pediu — visível na política aprendida, e ausente no agente míope.
+
+**O que ainda não se pode afirmar.** Com w=0,25, o γ=0,99 ganha +5,4 pp de ACR sobre o
+γ=0 e perde 1,4 pp de throughput. Isso pode ser uma curva melhor ou só outro ponto da
+mesma curva. Para decidir, é preciso a **fronteira** conformidade × throughput de cada γ;
+uma segunda grade (w ∈ {0,05; 0,1; 0,15; 0,4; 0,6}) está em treino.
 
 ---
 

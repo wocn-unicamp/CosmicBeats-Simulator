@@ -1,0 +1,21 @@
+{
+  "engine": "DRL",
+  "total_tasks": 206,
+  "success_count": 111,
+  "success_rate": 0.5388,
+  "drop_count": 95,
+  "drop_rate": 0.4612,
+  "avg_latency_ms": 0.416,
+  "total_joules": 1.03,
+  "joules_per_decision": 0.005,
+  "anomaly_task_count": 22,
+  "semantic_compliance_rate": 0.9272,
+  "anomaly_compliance_rate": 0.3182,
+  "effective_success_count": 111,
+  "effective_success_rate": 0.5388,
+  "correct_drop_count": 80,
+  "avg_ram_utilization_pct": 22.6,
+  "sat_1_final_battery_pct": 19.9,
+  "sat_2_final_battery_pct": 17.8,
+  "sat_15_final_battery_pct": 15.4
+}

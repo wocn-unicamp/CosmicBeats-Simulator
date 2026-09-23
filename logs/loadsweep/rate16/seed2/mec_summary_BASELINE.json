@@ -1,0 +1,21 @@
+{
+  "engine": "BASELINE",
+  "total_tasks": 188,
+  "success_count": 112,
+  "success_rate": 0.5957,
+  "drop_count": 76,
+  "drop_rate": 0.4043,
+  "avg_latency_ms": 0.002,
+  "total_joules": 0.188,
+  "joules_per_decision": 0.001,
+  "anomaly_task_count": 24,
+  "semantic_compliance_rate": 0.9149,
+  "anomaly_compliance_rate": 0.3333,
+  "effective_success_count": 106,
+  "effective_success_rate": 0.5638,
+  "correct_drop_count": 66,
+  "avg_ram_utilization_pct": 22.8,
+  "sat_1_final_battery_pct": 19.9,
+  "sat_2_final_battery_pct": 17.8,
+  "sat_15_final_battery_pct": 13.4
+}

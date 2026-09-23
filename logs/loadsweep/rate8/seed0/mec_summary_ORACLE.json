@@ -1,0 +1,21 @@
+{
+  "engine": "ORACLE",
+  "total_tasks": 113,
+  "success_count": 95,
+  "success_rate": 0.8407,
+  "drop_count": 18,
+  "drop_rate": 0.1593,
+  "avg_latency_ms": 0.004,
+  "total_joules": 0.113,
+  "joules_per_decision": 0.001,
+  "anomaly_task_count": 13,
+  "semantic_compliance_rate": 0.9823,
+  "anomaly_compliance_rate": 0.8462,
+  "effective_success_count": 95,
+  "effective_success_rate": 0.8407,
+  "correct_drop_count": 16,
+  "avg_ram_utilization_pct": 19.2,
+  "sat_1_final_battery_pct": 33.9,
+  "sat_2_final_battery_pct": 17.8,
+  "sat_15_final_battery_pct": 33.4
+}

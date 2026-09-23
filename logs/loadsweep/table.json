@@ -1,0 +1,218 @@
+{
+  "2.0|BASELINE": {
+    "runs": 5,
+    "tasks_per_run": 31.2,
+    "resource_drop_pct": 0.0,
+    "acr_pct": 41.666666666666664,
+    "acr_n": 12,
+    "ram_pct": 6.28,
+    "min_battery": 54.76
+  },
+  "2.0|ORACLE": {
+    "runs": 5,
+    "tasks_per_run": 31.2,
+    "resource_drop_pct": 0.0,
+    "acr_pct": 100.0,
+    "acr_n": 12,
+    "ram_pct": 6.22,
+    "min_battery": 55.16
+  },
+  "2.0|DRL": {
+    "runs": 5,
+    "tasks_per_run": 31.2,
+    "resource_drop_pct": 0.0,
+    "acr_pct": 25.0,
+    "acr_n": 12,
+    "ram_pct": 5.88,
+    "min_battery": 55.96
+  },
+  "2.0|DRL_ONEHOT": {
+    "runs": 5,
+    "tasks_per_run": 31.2,
+    "resource_drop_pct": 0.0,
+    "acr_pct": 100.0,
+    "acr_n": 12,
+    "ram_pct": 6.22,
+    "min_battery": 55.16
+  },
+  "4.0|BASELINE": {
+    "runs": 5,
+    "tasks_per_run": 65.2,
+    "resource_drop_pct": 0.0,
+    "acr_pct": 32.142857142857146,
+    "acr_n": 28,
+    "ram_pct": 12.94,
+    "min_battery": 29.96
+  },
+  "4.0|ORACLE": {
+    "runs": 5,
+    "tasks_per_run": 65.2,
+    "resource_drop_pct": 0.0,
+    "acr_pct": 100.0,
+    "acr_n": 28,
+    "ram_pct": 12.64,
+    "min_battery": 31.16
+  },
+  "4.0|DRL": {
+    "runs": 5,
+    "tasks_per_run": 65.2,
+    "resource_drop_pct": 0.0,
+    "acr_pct": 32.142857142857146,
+    "acr_n": 28,
+    "ram_pct": 11.86,
+    "min_battery": 33.56
+  },
+  "4.0|DRL_ONEHOT": {
+    "runs": 5,
+    "tasks_per_run": 65.2,
+    "resource_drop_pct": 0.0,
+    "acr_pct": 100.0,
+    "acr_n": 28,
+    "ram_pct": 12.64,
+    "min_battery": 31.16
+  },
+  "8.0|BASELINE": {
+    "runs": 5,
+    "tasks_per_run": 114.8,
+    "resource_drop_pct": 14.230019493177387,
+    "acr_pct": 29.508196721311474,
+    "acr_n": 61,
+    "ram_pct": 19.78,
+    "min_battery": 17.08
+  },
+  "8.0|ORACLE": {
+    "runs": 5,
+    "tasks_per_run": 114.8,
+    "resource_drop_pct": 13.840155945419104,
+    "acr_pct": 88.52459016393442,
+    "acr_n": 61,
+    "ram_pct": 19.4,
+    "min_battery": 17.56
+  },
+  "8.0|DRL": {
+    "runs": 5,
+    "tasks_per_run": 114.8,
+    "resource_drop_pct": 9.746588693957115,
+    "acr_pct": 27.868852459016395,
+    "acr_n": 61,
+    "ram_pct": 18.74,
+    "min_battery": 17.56
+  },
+  "8.0|DRL_ONEHOT": {
+    "runs": 5,
+    "tasks_per_run": 114.8,
+    "resource_drop_pct": 13.840155945419104,
+    "acr_pct": 88.52459016393442,
+    "acr_n": 61,
+    "ram_pct": 19.4,
+    "min_battery": 17.56
+  },
+  "12.0|BASELINE": {
+    "runs": 5,
+    "tasks_per_run": 150.6,
+    "resource_drop_pct": 27.027027027027028,
+    "acr_pct": 28.735632183908045,
+    "acr_n": 87,
+    "ram_pct": 22.04,
+    "min_battery": 15.8
+  },
+  "12.0|ORACLE": {
+    "runs": 5,
+    "tasks_per_run": 150.6,
+    "resource_drop_pct": 25.675675675675677,
+    "acr_pct": 79.3103448275862,
+    "acr_n": 87,
+    "ram_pct": 21.98,
+    "min_battery": 16.28
+  },
+  "12.0|DRL": {
+    "runs": 5,
+    "tasks_per_run": 150.6,
+    "resource_drop_pct": 21.02102102102102,
+    "acr_pct": 26.436781609195403,
+    "acr_n": 87,
+    "ram_pct": 21.28,
+    "min_battery": 16.28
+  },
+  "12.0|DRL_ONEHOT": {
+    "runs": 5,
+    "tasks_per_run": 150.6,
+    "resource_drop_pct": 25.675675675675677,
+    "acr_pct": 79.3103448275862,
+    "acr_n": 87,
+    "ram_pct": 21.98,
+    "min_battery": 16.28
+  },
+  "16.0|BASELINE": {
+    "runs": 5,
+    "tasks_per_run": 176.2,
+    "resource_drop_pct": 37.03703703703704,
+    "acr_pct": 29.591836734693878,
+    "acr_n": 98,
+    "ram_pct": 22.48,
+    "min_battery": 15.0
+  },
+  "16.0|ORACLE": {
+    "runs": 5,
+    "tasks_per_run": 176.2,
+    "resource_drop_pct": 36.27075351213282,
+    "acr_pct": 74.48979591836735,
+    "acr_n": 98,
+    "ram_pct": 22.28,
+    "min_battery": 15.8
+  },
+  "16.0|DRL": {
+    "runs": 5,
+    "tasks_per_run": 176.2,
+    "resource_drop_pct": 30.65134099616858,
+    "acr_pct": 24.489795918367346,
+    "acr_n": 98,
+    "ram_pct": 22.1,
+    "min_battery": 15.8
+  },
+  "16.0|DRL_ONEHOT": {
+    "runs": 5,
+    "tasks_per_run": 176.2,
+    "resource_drop_pct": 36.14303959131545,
+    "acr_pct": 73.46938775510205,
+    "acr_n": 98,
+    "ram_pct": 22.28,
+    "min_battery": 15.8
+  },
+  "24.0|BASELINE": {
+    "runs": 5,
+    "tasks_per_run": 206.4,
+    "resource_drop_pct": 45.673603504928806,
+    "acr_pct": 28.571428571428573,
+    "acr_n": 119,
+    "ram_pct": 22.76,
+    "min_battery": 13.8
+  },
+  "24.0|ORACLE": {
+    "runs": 5,
+    "tasks_per_run": 206.4,
+    "resource_drop_pct": 44.359255202628695,
+    "acr_pct": 67.22689075630252,
+    "acr_n": 119,
+    "ram_pct": 22.68,
+    "min_battery": 14.6
+  },
+  "24.0|DRL": {
+    "runs": 5,
+    "tasks_per_run": 206.4,
+    "resource_drop_pct": 39.211391018619935,
+    "acr_pct": 26.050420168067227,
+    "acr_n": 119,
+    "ram_pct": 22.580000000000002,
+    "min_battery": 14.6
+  },
+  "24.0|DRL_ONEHOT": {
+    "runs": 5,
+    "tasks_per_run": 206.4,
+    "resource_drop_pct": 44.14019715224534,
+    "acr_pct": 65.54621848739495,
+    "acr_n": 119,
+    "ram_pct": 22.68,
+    "min_battery": 14.6
+  }
+}
