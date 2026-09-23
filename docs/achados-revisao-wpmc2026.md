@@ -773,6 +773,60 @@ números do camera-ready se sustentam sem a ambiguidade.
 brasileiro — irrelevante para a regra — que decide. Em λ=4 quase nunca dispara; a
 coluna `decision_source` vai medir quanto.
 
+### IX.9 A decisão sequencial ajuda — mas só sob pressão forte de bateria
+
+Dezesseis agentes: γ ∈ {0; 0,99} × w ∈ {0; 0,05; 0,1; 0,15; 0,25; 0,4; 0,6; 1}, todos
+treinados em λ=12 nominal. Avaliação pareada nas sementes de teste 0–19
+(`scripts/frontier_seq.py`).
+
+**Método.** Um ponto com ACR maior e throughput menor não prova nada sozinho — pode ser
+outro ponto da mesma curva. A comparação justa é cada agente γ=0,99 contra o **envelope
+convexo superior** da família γ=0 (+ ORACLE) no mesmo throughput. Usa-se o envelope, e não
+só os pontos, porque misturar políticas aleatoriamente também está disponível para quem
+usa a família míope. Incerteza por **bootstrap por semente** (2.000 reamostragens): a
+semente é a unidade independente, e cada reamostragem recalcula agentes, envelope e ganho.
+
+**λ = 12 nominal (a carga de treino, bateria sob pressão forte):**
+
+| agente γ=0,99 | throughput | ACR | ganho sobre o envelope γ=0 | IC 95% |
+|---|---|---|---|---|
+| w=0,05 | 59,2% | 99,7% | **+4,4 pp** | [+2,4; +6,3] |
+| w=0,1 | 69,8% | 98,4% | **+4,7 pp** | [+1,7; +7,6] |
+| w=0,15 | 70,9% | 96,5% | **+3,0 pp** | [+0,6; +5,3] |
+| w=0,25 | 72,7% | 93,9% | +1,0 pp | [−1,1; +3,1] |
+| w=0,6 | 73,8% | 90,1% | +0,3 pp | [−1,9; +2,1] |
+| w=0,4 | 74,6% | 85,3% | −0,8 pp | [−2,8; +0,5] |
+| w=1 | 74,6% | 85,6% | −0,3 pp | [−1,6; +0,4] |
+
+Figura: `docs/fig_fronteira_l12.png`.
+
+**Leitura.** Na faixa de 59–71% de throughput, o agente com visão de futuro obtém de 3 a
+5 pp a mais de conformidade do que qualquer mistura de agentes míopes, e os três
+intervalos ficam inteiramente acima de zero. Perto do throughput máximo (≥ 72,7%) as duas
+famílias são indistinguíveis. Dito de outro modo: para quem aceita abrir mão de uma fração
+do tráfego comum, planejar torna a conformidade muito mais barata. No segmento do envelope
+míope entre 33% e 72% de throughput, cada ponto de ACR custa cerca de 6,4 pp de
+throughput; entre os agentes γ=0,99 de 69,8% e 72,7%, custa cerca de 0,6 pp. Essa razão é
+descritiva; a afirmação apoiada pelo intervalo é o ganho da tabela.
+
+**λ = 8 nominal (pressão moderada, fora da carga de treino): sem vantagem.** Ganhos entre
+−1,7 e +1,6 pp, intervalos cobrindo zero (um ponto, w=0,4, marginalmente abaixo:
+[−3,1; −0,2]). O envelope míope já está em 98,3% de ACR a 89% de throughput — sob pressão
+moderada sobra pouco para planejar. Figura: `docs/fig_fronteira_l8.png`.
+
+**O que isto responde ao Revisor 3.** O pedido era um cenário "com restrições de recurso
+mais apertadas ou objetivos de longo prazo em que a decisão sequencial importe". A
+resposta tem três partes, todas com dado:
+1. neste modelo a RAM não chega a limitar — a bateria esgota antes (IX.2);
+2. com a bateria sob pressão forte, a decisão sequencial melhora a conformidade de forma
+   estatisticamente sustentada, e a política aprendida é interpretável: reserva graduada de
+   bateria, começando bem acima do piso (IX.7);
+3. o benefício depende do regime e desaparece sob pressão moderada — o γ=0 do artigo não
+   estava errado no regime do artigo, que é de pressão leve.
+
+**Limites.** Uma semente de treino por configuração (a variância entre treinos não está
+medida); agentes treinados só em λ=12; o valor de w é escolha de pesquisa.
+
 ---
 
 ## Apêndice — Como verificar
