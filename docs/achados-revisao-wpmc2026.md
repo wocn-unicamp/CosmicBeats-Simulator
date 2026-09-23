@@ -924,6 +924,50 @@ do modelo. As duas leituras devem ir para a versão estendida. A operacional med
 como ele é; a outra mede a capacidade do modelo. Esperar as sementes 4–9 antes de
 concluir: com n = 25 os intervalos são largos.
 
+#### IX.9.2b SLM completo, sementes 0–9 (23/09, 18h30)
+
+| origem da decisão | tarefas sem regra | tarefas com regra |
+|---|---|---|
+| `model` | 599 | 44 |
+| `parse_failure` | 1 | **12** |
+| `api_failure` | 5 | 0 |
+
+As falhas de parse se concentram nas tarefas com regra: 12 de 56, contra 1 de 605 nas
+tarefas sem regra. Pelo teste exato de Fisher unilateral, p = 5·10⁻¹³. Não é ruído de API.
+
+**Por tipo de regra** (todas inéditas):
+
+| regra | tarefas | falhas de parse | conformes (decisões do modelo) |
+|---|---|---|---|
+| falha de hardware: bateria | 7 | 0 | 7 |
+| falha de hardware: sensor térmico | 7 | 0 | 7 |
+| HIPAA (EUA) | 9 | 3 | 2 |
+| ITAR (EUA) | 12 | 5 | 5 |
+| LGPD (Brasil) | 7 | 0 | 3 |
+| residência de dados (UE) | 14 | 4 | 6 |
+
+| ACR do SLM, 10 sementes | valor | IC 95% Wilson |
+|---|---|---|
+| operacional (falha conta como não conforme) | 30/56 = 53,6% | [40,7; 66,0] |
+| só decisões do modelo | 30/44 = 68,2% | [53,4; 80,0] |
+
+Nas tarefas que também existem na execução antiga, 31 de 33 têm o mesmo desfecho.
+
+**Leitura.** As regras de falha de hardware, cuja ação certa é descartar, o SLM acerta
+todas (14/14). O problema está todo nas regras de **região**, que exigem rotear a tarefa
+para outra jurisdição: são 16 acertos em 42 tarefas, e todas as falhas de formato caem aí.
+Isso refina a IX.5. O SLM não tem um "reflexo de descarte" genérico: ele erra, ou não
+chega a responder, justamente nas regras que exigem raciocinar sobre regiões. A hipótese
+do `maxOutputTokens` (IX.9.2) fica mais plausível, porque essas são as regras que pedem mais
+raciocínio. O teste, gravando o `finishReason`, pode ser feito agora que o SLM terminou.
+
+**LLM, parcial (sementes 0–1 de 10):** 11 de 11 decisões do modelo conformes nas tarefas
+com regra, e uma tarefa com regra perdida por `api_failure`. A API está lenta (7–10 s por
+requisição trivial; a semente 1 levou 6.986 s), por isso a campanha foi reiniciada às
+18h20 com `--timeout 21600`, mantendo as sementes 0 e 1. A frase do camera-ready ("o LLM
+mantém 20/20", sementes 0–2) é sobre decisões do modelo. Até aqui ela se sustenta nessa
+leitura; a semente 2 decide.
+
 ### IX.10 Estado ao encerrar a sessão de 23/09 e como retomar
 
 **Rodando em segundo plano (destacado da sessão; notebook precisa ficar na tomada):**
@@ -942,11 +986,11 @@ foi reiniciada com `--timeout 10800` (3 h). O vigia do LLM foi editado para usar
 limite. O runner decide o que está concluído pelos arquivos de saída, então nada que
 tinha terminado foi perdido; perderam-se só os 35 min em andamento da semente 1.
 
-Se algo cair, retomar sem refazer nada do que completou (**usar `--timeout 10800`**):
+Se algo cair, retomar sem refazer nada do que completou (**usar `--timeout 10800` no SLM e `--timeout 21600` no LLM**):
 
 ```bash
 venv/bin/python scripts/run_experiments.py --seeds 0-9 --engines SLM --rule-split heldout --outdir logs/generalization/heldout_lm_v2 --timeout 10800
-venv/bin/python scripts/run_experiments.py --seeds 0-9 --engines LLM --rule-split heldout --outdir logs/generalization/heldout_lm_v2 --timeout 10800
+venv/bin/python scripts/run_experiments.py --seeds 0-9 --engines LLM --rule-split heldout --outdir logs/generalization/heldout_lm_v2 --timeout 21600
 ```
 
 **Próximos passos, em ordem:**
