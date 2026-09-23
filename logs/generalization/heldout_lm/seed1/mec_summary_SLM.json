@@ -1,0 +1,21 @@
+{
+  "engine": "SLM",
+  "total_tasks": 57,
+  "success_count": 55,
+  "success_rate": 0.9649,
+  "drop_count": 2,
+  "drop_rate": 0.0351,
+  "avg_latency_ms": 50.0,
+  "total_joules": 5.7,
+  "joules_per_decision": 0.1,
+  "anomaly_task_count": 4,
+  "semantic_compliance_rate": 0.9649,
+  "anomaly_compliance_rate": 0.5,
+  "effective_success_count": 54,
+  "effective_success_rate": 0.9474,
+  "correct_drop_count": 1,
+  "avg_ram_utilization_pct": 11.1,
+  "sat_1_final_battery_pct": 91.9,
+  "sat_2_final_battery_pct": 29.8,
+  "sat_15_final_battery_pct": 43.4
+}

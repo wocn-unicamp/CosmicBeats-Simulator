@@ -310,6 +310,44 @@ Uma execução independente do SLM na semente 0 reproduziu **SCR 97,1% e ACR 75,
 idênticos ao artigo, diferindo apenas em drops por infraestrutura (4 contra 7) — o que
 reforça a leitura de que aqueles drops eram instabilidade de API, não decisão do modelo.
 
+### IV.6 Regras inéditas: os modelos de linguagem (resultado decisivo)
+
+Três sementes, 20 tarefas com anomalia pareadas entre os **seis** motores, todas sob
+restrições que nenhum deles viu em tempo de projeto.
+
+| motor | ACR | IC 95% | McNemar vs BASELINE |
+|---|---|---|---|
+| BASELINE | 6/20 = 30,0% | [14,5 – 51,9] | — |
+| ORACLE | 6/20 = 30,0% | [14,5 – 51,9] | 0/0, p = 1,000 |
+| DRL (cego) | 6/20 = 30,0% | [14,5 – 51,9] | 5/5, p = 1,000 |
+| DRL_ONEHOT | 10/20 = 50,0% | [29,9 – 70,1] | 6/2, p = 0,289 |
+| SLM | 10/20 = 50,0% | [29,9 – 70,1] | 5/1, p = 0,219 |
+| **LLM** | **20/20 = 100,0%** | [83,9 – 100,0] | **14/0, p = 0,0001** |
+
+O agregado já separa o LLM de todo o resto, mas é a decomposição por tipo de obrigação
+que distingue raciocínio de reflexo:
+
+| obrigação | BASELINE | ORACLE | DRL | DRL_ONEHOT | SLM | **LLM** |
+|---|---|---|---|---|---|---|
+| descartar (n=5) | 0/5 | 0/5 | 5/5 | 5/5 | 5/5 | **5/5** |
+| rotear a EUROPE (n=9) | 4/9 | 4/9 | 1/9 | 5/9 | 4/9 | **9/9** |
+| rotear a BRAZIL/USA (n=6) | 2/6 | 2/6 | 0/6 | 0/6 | 1/6 | **6/6** |
+
+**O LLM é o único motor que acerta as regras de região** — 9/9 e 6/6. Todos os demais
+ficam no nível do BASELINE ou abaixo dele nesse grupo. Descartar diante de uma anomalia é
+barato e qualquer um faz; aplicar a obrigação correta exige ler a regra.
+
+**O SLM não generaliza.** Seus 50% são inteiramente explicados pelo reflexo de descartar
+(5/5) somado a acertos de região no nível do acaso (4/9 e 1/6) — numericamente idêntico
+ao DRL_ONEHOT, cujo comportamento já sabemos ser arbitrário. Isso é um resultado novo e
+relevante: o artigo apresenta o SLM como meio-termo capaz (75% de ACR nas regras
+conhecidas), e nas inéditas ele se comporta como reflexo. A distinção que importa não é
+"modelo de linguagem vs. otimizador numérico", é **qual** modelo de linguagem.
+
+Ressalva de tamanho: n=20 e três sementes. O IC do LLM é [83,9 – 100], e o contraste
+contra o BASELINE é sólido (p=0,0001), mas a separação entre SLM e DRL_ONEHOT não é
+resolvível nesse n. Ampliar as sementes é o próximo passo.
+
 ---
 
 ## Parte V — Reformulação proposta da tese
@@ -333,10 +371,9 @@ refutá-la.
 
 ### Falta
 
-1. **SLM e LLM nas regras inéditas** — a coluna que decide a tese. Em execução.
-   Primeiro dado (SLM, semente 0): **5/8**, contra 1/8 do BASELINE e do ORACLE, mas
-   **empatado com o DRL_ONEHOT** e acertando sobretudo os descartes. Uma semente com n=8
-   não decide nada; tratar como preliminar.
+1. **Mais sementes na coluna das regras inéditas.** As três atuais (n=20) já separam o
+   LLM de todo o resto com p=0,0001, mas não separam o SLM do reflexo do DRL_ONEHOT.
+   Custo: ~20 min por execução remota.
 2. **Medição real de energia** (item 3.2 do plano) — exige `sudo` para ler os contadores
    RAPL; não iniciado.
 3. **Pressão de recurso e formulação sequencial** (item 3.3, resposta ao Rev. 3 sobre
@@ -344,11 +381,10 @@ refutá-la.
 
 ### Riscos
 
-- **O maior:** se SLM e LLM também colapsarem nas regras inéditas, a tese de
-  generalização não se sustenta. O resultado continua publicável — "nenhum dos paradigmas
-  atuais lida com restrições não enumeradas" é achado negativo legítimo — mas é outro
-  artigo, e a decisão sobre o eixo da versão estendida precisa ser tomada com esse dado
-  na mão.
+- ~~O maior: se SLM e LLM também colapsarem nas regras inéditas...~~ **Risco resolvido**
+  (ver IV.6). O LLM sustenta 20/20; o SLM, não. A tese de generalização se sustenta, mas
+  com um refinamento que não estava previsto: ela vale para o LLM e **não** para o SLM, o
+  que obriga a rever como o artigo posiciona o SLM como meio-termo.
 - O corpus held-out tem seis regras. É pouco para sustentar afirmação forte de
   generalização; convém ampliá-lo antes da submissão do periódico.
 - A composição do corpus influencia os agregados (ver IV.3). Qualquer regra nova deve
