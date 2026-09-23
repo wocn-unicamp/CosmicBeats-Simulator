@@ -1,0 +1,15 @@
+lambda nominal 12/min, 20 sementes, bootstrap por semente x2000
+envelope gamma=0 (+ORACLE): [(45.9, 100.0), (73.0, 92.0), (74.5, 86.6), (74.8, 85.3), (74.9, 84.3)]
+
+agente gamma=0,99     thr    ACR   ganho sobre o envelope    IC95% bootstrap
+g0p99_w0_l12_s44    14.3% 100.0%  fora do alcance do envelope
+g0p99_w0p05_l12_s44  67.2%  98.7%                   +5.0 pp  [ +2.7,  +7.4]  *
+g0p99_w0p1_l12_s44  67.2%  94.2%                   +0.5 pp  [ -1.7,  +2.6]
+g0p99_w0p25_l12_s44  73.2%  91.4%                   -0.2 pp  [ -1.9,  +1.4]
+g0p99_w0p15_l12_s44  73.4%  91.4%                   +0.8 pp  [ -1.4,  +2.6]
+g0p99_w0p4_l12_s44  73.7%  93.3%                   +3.6 pp  [ +1.7,  +4.9]  *
+g0p99_w1_l12_s44    74.4%  85.0%                   -1.7 pp  [ -3.3,  -0.6]
+g0p99_w0p6_l12_s44  74.6%  84.7%                   -1.5 pp  [ -3.2,  -0.6]
+
+* = IC inteiramente acima de zero
+[fig] docs/fig_fronteira_l12_s44.png

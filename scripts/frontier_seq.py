@@ -83,18 +83,23 @@ def main() -> int:
     ap.add_argument("--json", default=None)
     ap.add_argument("--train-seed", type=int, default=42,
                     help="semente de treino dos agentes a comparar (42 = modelos originais)")
+    ap.add_argument("--myopic-seeds", type=int, nargs="+", default=None,
+                    help="sementes de treino da familia gamma=0 que formam o envelope "
+                         "(default: a mesma de --train-seed). Varias sementes = teste mais "
+                         "exigente: o envelope passa a ser o melhor de todos os treinos miopes")
     args = ap.parse_args()
     seeds = list(range(args.seeds))
 
     from stable_baselines3 import DQN
     agents = {"ORACLE": ("g0", per_seed(lambda e, o: oracle_action(e), args.rate, seeds))}
-    suffix = "" if args.train_seed == 42 else f"_s{args.train_seed}"
+    myopic = set(args.myopic_seeds or [args.train_seed])
     for path in sorted(glob.glob(os.path.join(REPO, "models/seq/*/best_model.zip"))):
         name = os.path.basename(os.path.dirname(path))
-        seeded = "_s" in name.rsplit("_l", 1)[-1]
-        if (suffix and not name.endswith(suffix)) or (not suffix and seeded):
-            continue
+        tail = name.rsplit("_l", 1)[-1]
+        tseed = int(tail.split("_s")[1]) if "_s" in tail else 42
         fam = "g99" if name.startswith("g0p99_") else "g0"
+        if tseed not in ({args.train_seed} if fam == "g99" else myopic):
+            continue
         m = DQN.load(path)
         agents[name] = (fam, per_seed(lambda e, o, m=m: int(m.predict(o, deterministic=True)[0]),
                                       args.rate, seeds))
@@ -121,6 +126,7 @@ def main() -> int:
                 boots[n].append(gain)
 
     print(f"lambda nominal {args.rate:g}/min, {len(seeds)} sementes, bootstrap por semente x{args.boot}")
+    print(f"treino gamma=0,99: semente {args.train_seed}; envelope gamma=0: sementes {sorted(myopic)}")
     print("envelope gamma=0 (+ORACLE):", [(round(x, 1), round(y, 1)) for x, y in H])
     print(f"\n{'agente gamma=0,99':18s} {'thr':>6s} {'ACR':>6s} {'ganho sobre o envelope':>24s} {'IC95% bootstrap':>18s}")
     summary = {}

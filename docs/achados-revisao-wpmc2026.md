@@ -824,8 +824,66 @@ resposta tem três partes, todas com dado:
 3. o benefício depende do regime e desaparece sob pressão moderada — o γ=0 do artigo não
    estava errado no regime do artigo, que é de pressão leve.
 
-**Limites.** Uma semente de treino por configuração (a variância entre treinos não está
+**Limites (antes da replicação abaixo).** Uma semente de treino por configuração (a variância entre treinos não está
 medida); agentes treinados só em λ=12; o valor de w é escolha de pesquisa.
+
+#### IX.9.1 Replicação em três sementes de treino (23/09)
+
+Os 16 agentes foram retreinados com as sementes 43 e 44 (`models/seq/*_s43`, `*_s44`;
+mesmos hiperparâmetros, mesmas 300 mil interações). A avaliação continua nas mesmas
+sementes de teste 0–19.
+
+**Dois testes, do mais brando ao mais exigente:**
+- *envelope da mesma semente:* cada agente γ=0,99 contra o envelope dos γ=0 treinados
+  com a **mesma** semente (é o teste da IX.9);
+- *envelope conjunto (o teste que vale):* cada agente γ=0,99 contra o envelope dos γ=0 das
+  **três** sementes juntas (24 agentes míopes + ORACLE). O teste favorece a família míope
+  de propósito, porque ela passa a ter o melhor de três treinos contra um treino só. Um
+  ganho que sobrevive a isso não é sorte de treino.
+
+Ganho sobre o envelope conjunto, λ=12 nominal, bootstrap por semente de teste ×2.000
+(* = IC 95% inteiramente acima de zero; † = inteiramente abaixo):
+
+| w | semente 42 | semente 43 | semente 44 |
+|---|---|---|---|
+| 0,05 | **+3,1** [+1,6; +4,5] * (thr 59%) | **+3,0** [+0,1; +6,0] * (thr 70%) | **+4,1** [+2,0; +6,1] * (thr 67%) |
+| 0,1 | **+4,5** [+1,6; +7,2] * | **+5,3** [+3,0; +7,6] * | −0,3 [−2,4; +1,2] |
+| 0,15 | **+2,8** [+0,4; +5,1] * | −0,2 [−3,2; +2,3] | −0,3 [−2,1; +1,2] |
+| 0,25 | +1,0 [−1,1; +3,1] | −0,2 [−2,0; +1,6] | −1,2 [−2,7; +0,6] |
+| 0,4 | −1,2 [−3,4; +0,2] | −0,7 [−2,8; +1,4] | **+2,6** [+0,7; +4,3] * |
+| 0,6 | −0,1 [−2,5; +2,0] | +0,3 [−0,9; +1,2] | −1,8 [−4,0; −0,6] † |
+| 1 | −0,7 [−1,9; +0,2] | −2,2 [−4,9; +0,0] | −2,3 [−4,3; −0,9] † |
+
+(w=0 fica fora da comparação: esses agentes descartam quase tudo, 10–22% de throughput,
+e o ganho é zero por construção. Pelo envelope da mesma semente, os resultados das
+sementes 43 e 44 estão em `docs/frontier_l12_s43.txt` e `_s44.txt`; o conjunto, em
+`docs/frontier_l12_s4?_pooled.txt`.)
+
+**O que se sustenta.**
+1. **w = 0,05 dá ganho significativo nas três sementes de treino, mesmo contra o envelope
+   conjunto:** +3,0 a +4,1 pp de conformidade. Essa é a afirmação que a versão estendida
+   pode fazer. Não é o melhor de oito agentes escolhido depois: é o mesmo w nas três.
+2. Em toda semente existe pelo menos um agente com ganho de +4 a +5 pp na faixa de 59–70%
+   de throughput (o máximo por semente é +4,5, +5,3 e +4,1).
+3. Perto do throughput máximo (w ≥ 0,25) o planejamento não ajuda. Na semente 44 chega a
+   **atrapalhar** de forma significativa (w=0,6 e w=1, −1,8 e −2,3 pp).
+
+**O que não se sustenta, e muda a IX.9.** O ganho em w=0,1 e w=0,15 dependia da semente
+de treino (2 de 3 e 1 de 3). O mesmo w também leva a throughputs diferentes conforme o
+treino: com w=0,05, 59%, 70% e 67%. Logo, w **não** controla a posição na fronteira de
+forma reprodutível. A frase da IX.9, "de 3 a 5 pp na faixa de 59–71%", vale como
+"existe um agente γ=0,99 que faz isso em cada treino", e não como "γ=0,99 com w entre
+0,05 e 0,15".
+
+**Formulação recomendada para a versão estendida:** "Sob pressão forte de bateria, o
+agente com γ = 0,99 e w = 0,05 alcança de 3 a 4 pp a mais de conformidade do que o melhor
+envelope de 24 agentes míopes com o mesmo throughput, em três sementes de treino
+independentes. Perto do throughput máximo o benefício desaparece."
+
+**Limites que restam:** três sementes de treino é o mínimo para falar de variância, não uma
+estimativa dela; os agentes continuam treinados só em λ=12; o bootstrap reamostra
+sementes de teste, não de treino. Por isso a robustez vem da replicação (3 de 3), e não de
+um intervalo que inclua a variância de treino.
 
 ### IX.10 Estado ao encerrar a sessão de 23/09 e como retomar
 
@@ -835,13 +893,21 @@ medida); agentes treinados só em λ=12; o valor de w é escolha de pesquisa.
 |---|---|---|
 | SLM instrumentado, regras inéditas, sementes 0–9 | `logs/generalization/heldout_lm_v2/` | `~/cosmicbeats-slm-v2.log` |
 | Vigia do LLM: testa a API a cada 10 min e roda as sementes 0–9 quando sair do 503 | idem | `~/cosmicbeats-llm-v2.log` |
-| 32 réplicas de treino (sementes 43 e 44 da grade de 16 agentes) | `models/seq/*_s43`, `*_s44` | — |
+| ~~32 réplicas de treino~~ — **concluídas em 23/09; resultado na IX.9.1** | `models/seq/*_s43`, `*_s44` | — |
 
-Se algo cair, retomar sem refazer nada do que completou:
+**Atualização de 23/09, 12h45.** A semente 0 do SLM estourou o limite de 3.600 s por
+execução do runner e foi descartada. A API da Gemma respondia 200, mas levava ~4 s até
+para um prompt trivial; o SLM antigo levava ~16 min por semente. É lentidão externa,
+não travamento. Latência não altera a decisão; ela só é registrada. Por isso a campanha
+foi reiniciada com `--timeout 10800` (3 h). O vigia do LLM foi editado para usar o mesmo
+limite. O runner decide o que está concluído pelos arquivos de saída, então nada que
+tinha terminado foi perdido; perderam-se só os 35 min em andamento da semente 1.
+
+Se algo cair, retomar sem refazer nada do que completou (**usar `--timeout 10800`**):
 
 ```bash
-venv/bin/python scripts/run_experiments.py --seeds 0-9 --engines SLM --rule-split heldout --outdir logs/generalization/heldout_lm_v2
-venv/bin/python scripts/run_experiments.py --seeds 0-9 --engines LLM --rule-split heldout --outdir logs/generalization/heldout_lm_v2
+venv/bin/python scripts/run_experiments.py --seeds 0-9 --engines SLM --rule-split heldout --outdir logs/generalization/heldout_lm_v2 --timeout 10800
+venv/bin/python scripts/run_experiments.py --seeds 0-9 --engines LLM --rule-split heldout --outdir logs/generalization/heldout_lm_v2 --timeout 10800
 ```
 
 **Próximos passos, em ordem:**
@@ -852,16 +918,17 @@ venv/bin/python scripts/run_experiments.py --seeds 0-9 --engines LLM --rule-spli
    do camera-ready se sustenta. **Se a API do LLM não voltar até quinta à noite,
    suavizar essa frase no camera-ready por precaução** — o resultado central (o LLM é o
    único que lê as regras de região) se sustenta de qualquer modo.
-2. **Quando as réplicas terminarem:** `scripts/frontier_seq.py --rate 12 --train-seed 43`
-   e `--train-seed 44`. Se o ganho de +3 a +5 pp aparecer nas três sementes, a IX.9 se
-   confirma; se não, reportar como dependente do treino.
+2. ~~Réplicas de treino~~ **feito (IX.9.1):** o ganho em w=0,05 se confirma em 3 de 3
+   sementes contra o envelope conjunto; os ganhos em w=0,1 e w=0,15 dependem do treino.
+   Para a reunião: levar a tabela da IX.9.1 e a formulação recomendada.
 3. Para a versão estendida: treinar os agentes sequenciais também em λ=8; decidir com o
    orientador o valor de w; ampliar o corpus de regras inéditas (6 é pouco); item 3.2
    (energia medida por RAPL, exige sudo — perdeu prioridade pela VII.2).
 
 **Decisões que dependem do orientador (reunião de sexta):** a tese reformulada (VIII.1,
 IX.5); o posicionamento do SLM, que nas regras inéditas se comporta como reflexo de
-descarte; quanto do item 3.3 entra na versão estendida; e o valor de w.
+descarte; quanto do item 3.3 entra na versão estendida; e o valor de w (a IX.9.1 mostra
+que só w=0,05 replica, o que favorece fixar esse valor).
 
 **Estado das branches:** `camera-ready/wpmc2026-reviewer-response` contém a versão para
 submissão (6 páginas, verificador 58/58, PDF em `paper/revised-camera-ready.pdf`, prazo

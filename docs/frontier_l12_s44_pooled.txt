@@ -1,0 +1,15 @@
+lambda nominal 12/min, 20 sementes, bootstrap por semente x2000
+treino gamma=0,99: semente 44; envelope gamma=0: sementes [42, 43, 44]
+envelope gamma=0 (+ORACLE): [(7.5, 100.0), (45.9, 100.0), (72.2, 93.3), (73.1, 92.7), (74.0, 89.5), (74.8, 85.3), (74.9, 84.3)]
+
+agente gamma=0,99     thr    ACR   ganho sobre o envelope    IC95% bootstrap
+g0p99_w0_l12_s44    14.3% 100.0%                   +0.0 pp  [ +0.0,  +0.0]
+g0p99_w0p05_l12_s44  67.2%  98.7%                   +4.1 pp  [ +2.0,  +6.1]  *
+g0p99_w0p1_l12_s44  67.2%  94.2%                   -0.3 pp  [ -2.4,  +1.2]
+g0p99_w0p25_l12_s44  73.2%  91.4%                   -1.2 pp  [ -2.7,  +0.6]
+g0p99_w0p15_l12_s44  73.4%  91.4%                   -0.3 pp  [ -2.1,  +1.2]
+g0p99_w0p4_l12_s44  73.7%  93.3%                   +2.6 pp  [ +0.7,  +4.3]  *
+g0p99_w1_l12_s44    74.4%  85.0%                   -2.3 pp  [ -4.3,  -0.9]
+g0p99_w0p6_l12_s44  74.6%  84.7%                   -1.8 pp  [ -4.0,  -0.6]
+
+* = IC inteiramente acima de zero
