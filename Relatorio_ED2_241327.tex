@@ -247,8 +247,13 @@ constellations with optical ISL), so drops reflect exclusively battery/RAM
 exhaustion or semantic rule violations---never link failure.
 
 \subsection{Task Arrival and Semantic Anomalies}
-Task arrivals follow a Poisson process with rate $\lambda = 4$~tasks/min, the
-standard model for aggregated \ac{IoT}/NTN traffic~\cite{guo2024}. Each task
+Task arrivals are drawn from a Poisson process with nominal rate
+$\lambda = 4$~tasks/min, the standard model for aggregated \ac{IoT}/NTN
+traffic~\cite{guo2024}, resolved on the 5-s simulation step: at most one task
+arrives per step, and the next arrival is timed from the step that serves the
+previous one. Inter-arrival times are thus $5\lceil X/5\rceil$~s with
+$X\sim\mathrm{Exp}(\lambda)$, an effective rate of $\approx$3.4~tasks/min
+(mean 17.6~s). Each task
 requires 500~MB of RAM held for 60~seconds. A fraction $\alpha = 10\%$ of tasks
 carry one of three semantic constraints, assigned uniformly at random:
 (i)~\emph{GDPR compliance} (must route exclusively to EUROPE, or discard);
@@ -301,7 +306,7 @@ Eclipse fraction & $\approx$53\%    & Above typical $\approx$35 min \cite{sumant
 Battery threshold & 20\% SoC        & Design choice \\
 Battery capacities & 75/50/100 Wh  & Design choice (heterogeneous HW) \\
 SLM latency (NPU) & \SI{50}{\milli\second} & Order-of-magnitude from on-device benchmarks \cite{wang2025} \\
-Task arrival     & Poisson, $\lambda$\,=\,4/min & Standard NTN/IoT model \cite{guo2024}; rate is design choice \\
+Task arrival     & Poisson, $\lambda$\,=\,4/min (3.4 eff.) & Standard NTN/IoT model \cite{guo2024}; rate is design choice \\
 RAM (total / task) & 4{,}096 / 500 MB & Design choice \\
 Task hold time   & 60 s             & Design choice \\
 Anomaly rate     & 10\%             & Design choice ($\approx$8 anomaly tasks in 69) \\
@@ -587,11 +592,11 @@ definitions follow.
 
   \item \textbf{Time-weighted RAM utilisation:} integral of
     (RAM in use / total RAM) over simulation time, per satellite, averaged
-    across the fleet. By Little's Law ($L = \lambda W$), with
-    $\lambda = 4/60$~tasks/s and $W = 60$~s hold time:
+    across the fleet. By Little's Law ($L = \lambda W$), with the effective
+    $\lambda \approx 3.4/60$~tasks/s and $W = 60$~s hold time:
     \begin{equation}
-      \bar{u} \approx \frac{4 \times 500~\text{MB}}{3 \times 4{,}096~\text{MB}}
-               \approx 16\%.
+      \bar{u} \approx \frac{3.4 \times 500~\text{MB}}{3 \times 4{,}096~\text{MB}}
+               \approx 13.8\%.
       \label{eq:ram}
     \end{equation}
     Reported as a methodological note in Section~\ref{sec:results}, not as a
@@ -746,7 +751,7 @@ eclipse sweep.
 
 
 Time-weighted RAM utilisation (BASELINE 13.7\%, DRL 12.1\%, SLM 12.3\%,
-LLM 13.1\%) sits near the $\approx$16\% Little's-Law prediction
+LLM 13.1\%) matches the 13.8\% Little's-Law prediction
 (Eq.~\ref{eq:ram}); RAM never binds, so drops reflect semantic and battery
 constraints, not queue exhaustion.
 
@@ -759,8 +764,8 @@ LLM incurs a full round-trip to the ground station
 (median \SI{955}{\milli\second}, IQR \numrange{877}{1131}~ms; the
 \SI{6112}{\milli\second} run mean reflects free-tier rate-limit back-off on 10
 of 69 calls rather than inference or propagation cost). The relevant budget
-here is set by task arrivals: at $\lambda=4$~tasks/min the mean inter-arrival
-time is 15~s, of which the LLM's median decision uses 6.4\%, so all four engines
+here is set by task arrivals: the effective mean inter-arrival time is
+17.6~s, of which the LLM's median decision uses 5.4\%, so all four engines
 meet it. Millisecond budgets, typical of link-layer scheduling rather than task
 placement, would exclude the cloud LLM. From a throughput
 perspective, BASELINE accepts all 69 tasks (zero drops); DRL and
@@ -839,7 +844,7 @@ design time, a table or an informed DRL agent is sufficient and cheaper; a
 language model earns its place only when constraints arrive that no one
 enumerated.
 (2)~\emph{Latency vs.\ context richness}: BASELINE and DRL decide in
-microseconds; the cloud LLM needs about a second, well within the 15~s arrival
+microseconds; the cloud LLM needs about a second, well within the 17.6~s arrival
 budget of this scenario but not within millisecond budgets.
 (3)~\emph{Energy}: under the declared model, decision energy differs by three to
 four orders of magnitude across engines yet stays below 0.2\% of the battery,
@@ -847,7 +852,7 @@ so it is not the binding cost.
 
 \subsection*{Limitations}
 Four limitations bound these conclusions. The workload is light
-($\lambda=4$~tasks/min, 12--14\% RAM occupancy), so the resource constraint never
+($\approx$3.4~tasks/min effective, 12--14\% RAM occupancy), so the resource constraint never
 binds: drop-rate and utilisation findings describe an unsaturated regime, and the
 single-step ($\gamma=0$) formulation is appropriate precisely because temporal
 coupling is weak. The unseen-rule evaluation uses six rules and three seeds for
@@ -858,8 +863,9 @@ latency rather than run on an NPU.
 
 Future work includes a hybrid macro-micro architecture (LLM for periodic
 policy reconfiguration, SLM/DRL for per-task decisions)~\cite{lee2024}, longer
-windows ($\geq$2~h) spanning several eclipse cycles, and loads
-($\lambda\geq12$~tasks/min) high enough for RAM to bind.
+windows ($\geq$2~h) spanning several eclipse cycles, and heavier
+loads, which first require lifting the generator's one-arrival-per-step limit
+(12~tasks/min).
 
 \FloatBarrier
 \begin{thebibliography}{10}
