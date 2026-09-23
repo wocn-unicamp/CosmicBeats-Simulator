@@ -19,7 +19,9 @@ import os
 import random
 import numpy as np
 
-_MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "models", "best_model.zip")
+from src import semantic_rules
+
+_MODELS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "models")
 
 # Satellite order MUST match NTNMECEnv._SATS
 _SAT_ORDER = [
@@ -33,15 +35,28 @@ _BAT_SAFETY  = 20.0
 
 
 class DRLScheduler:
-    def __init__(self):
+    def __init__(self, observe_rule_type: bool = False):
+        """observe_rule_type=False reproduz o braco do artigo. True usa o agente
+        treinado com one-hot das regras conhecidas — a paridade de informacao
+        pedida pelo Revisor 3. Cada variante tem o seu proprio modelo, e o
+        espaco de observacao precisa casar com o que foi treinado."""
         from stable_baselines3 import DQN
-        path = os.path.abspath(_MODEL_PATH)
+        self.observe_rule_type = observe_rule_type
+        subdir = "onehot" if observe_rule_type else ""
+        path = os.path.abspath(os.path.join(_MODELS_DIR, subdir, "best_model.zip"))
         if not os.path.exists(path):
+            flag = " --observe-rule-type" if observe_rule_type else ""
             raise FileNotFoundError(
                 f"DRL model not found at {path}. "
-                "Run: python scripts/train_drl.py"
+                f"Run: python scripts/train_drl.py{flag}"
             )
         self.model = DQN.load(path)
+        expected = self.model.observation_space.shape[0]
+        wanted = 13 + (len(semantic_rules.ONEHOT_ORDER) if observe_rule_type else 0)
+        if expected != wanted:
+            raise ValueError(
+                f"modelo em {path} espera observacao de {expected} dims, mas esta "
+                f"variante constroi {wanted}. Modelo e variante estao trocados.")
         # DQN.load() reseeds the global RNG via SB3's set_random_seed, which would
         # shift the Poisson arrival sequence. Restore THIS run's seed (not a fixed
         # 0), otherwise every seed would collapse onto the same task stream.
@@ -76,6 +91,10 @@ class DRLScheduler:
         ridx = _REGION_IDX.get(task_dict.get("region", "USA"), 0)
         region_oh[ridx] = 1.0
         has_anomaly = float(bool(task_dict.get("semantic_anomaly")))
+        # Vetor nulo para uma restricao fora do conjunto conhecido: o agente
+        # sabe que ha uma (has_anomaly=1) mas nao qual — por construcao.
+        rule_oh = (semantic_rules.onehot(task_dict.get("semantic_anomaly"))
+                   if self.observe_rule_type else [])
 
         fleet_by_id = {s["id"]: s for s in fleet}
         sat_features = []
@@ -87,15 +106,34 @@ class DRLScheduler:
                 float(sat.get("solar_charging", True)),
             ]
 
-        return np.array(region_oh + [has_anomaly] + sat_features, dtype=np.float32)
+        return np.array(region_oh + [has_anomaly] + rule_oh + sat_features,
+                        dtype=np.float32)
 
     # ------------------------------------------------------------------ #
     # Action → satellite mapping                                          #
     # ------------------------------------------------------------------ #
 
     def _resolve_action(self, action, task_dict, fleet, battery_safety_pct):
-        task_region = task_dict.get("region")
-        task_ram    = task_dict.get("ram", 0)
+        """Revalida a acao escolhida contra o estado real da frota.
+
+        A regiao exigida nem sempre e a da tarefa: GDPR manda para EUROPE e
+        soberania para BRAZIL, independentemente de onde a tarefa surgiu. A
+        versao anterior comparava sempre com a regiao da propria tarefa e, com
+        isso, anulava justamente as decisoes corretas de roteamento cruzado —
+        a politica escolhia o satelite certo e a validacao o descartava.
+
+        Isso nao altera os resultados publicados: o agente cego de 13 dims
+        aprendeu a sempre emitir DROP diante de uma anomalia, e DROP retorna
+        antes desta checagem; fora das anomalias, a regiao exigida e a da tarefa.
+        O bug so se manifesta quando o agente consegue ver qual e a regra.
+        """
+        rule = semantic_rules.get(task_dict.get("semantic_anomaly"))
+        if rule is not None and rule.must_drop:
+            # Descartar e a unica acao conforme; rotear nunca e valido aqui.
+            return None
+        required_region = (rule.required_region if rule is not None
+                           else task_dict.get("region"))
+        task_ram = task_dict.get("ram", 0)
 
         if action == 3:
             return None  # explicit DROP
@@ -109,7 +147,7 @@ class DRLScheduler:
 
         if sat is None:
             return None
-        if sat.get("region") != task_region:
+        if sat.get("region") != required_region:
             return None
         if sat.get("battery_pct", 0.0) <= battery_safety_pct:
             return None

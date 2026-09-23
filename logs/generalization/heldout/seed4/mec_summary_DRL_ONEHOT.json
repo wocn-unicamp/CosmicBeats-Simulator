@@ -1,0 +1,21 @@
+{
+  "engine": "DRL_ONEHOT",
+  "total_tasks": 67,
+  "success_count": 66,
+  "success_rate": 0.9851,
+  "drop_count": 1,
+  "drop_rate": 0.0149,
+  "avg_latency_ms": 0.213,
+  "total_joules": 0.067,
+  "joules_per_decision": 0.001,
+  "anomaly_task_count": 3,
+  "semantic_compliance_rate": 0.9851,
+  "anomaly_compliance_rate": 0.6667,
+  "effective_success_count": 66,
+  "effective_success_rate": 0.9851,
+  "correct_drop_count": 0,
+  "avg_ram_utilization_pct": 13.3,
+  "sat_1_final_battery_pct": 57.9,
+  "sat_2_final_battery_pct": 49.8,
+  "sat_15_final_battery_pct": 35.4
+}

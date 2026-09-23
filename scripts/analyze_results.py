@@ -30,7 +30,7 @@ import os
 import statistics as st
 from collections import defaultdict
 
-ENGINES = ["BASELINE", "ORACLE", "DRL", "SLM", "LLM"]
+ENGINES = ["BASELINE", "ORACLE", "DRL", "DRL_ONEHOT", "SLM", "LLM"]
 
 # Parâmetros do cenário, espelhando src/ai_logic.py (TASK_DURATION_S, mec_ram_total).
 TASK_DURATION_S = 60.0

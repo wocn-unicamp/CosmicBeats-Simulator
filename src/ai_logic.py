@@ -47,6 +47,8 @@ class MECOrchestrator:
             self.brain = SLMScheduler()
         elif self._engine == "DRL":
             self.brain = DRLScheduler()
+        elif self._engine == "DRL_ONEHOT":
+            self.brain = DRLScheduler(observe_rule_type=True)
         elif self._engine == "ORACLE":
             self.brain = OracleScheduler()
         elif self._engine == "BASELINE":

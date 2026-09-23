@@ -1,9 +1,15 @@
 """
 NTNMECEnv — Gymnasium environment for NTN-MEC satellite routing.
 
-Observation (13 floats, normalized [0,1]):
+Observation (13 floats by default; 16 with observe_rule_type=True):
   [0:3]  task_region_onehot  (USA=0, BRAZIL=1, EUROPE=2)
   [3]    has_anomaly
+  [4:7]  rule_onehot         ONLY when observe_rule_type=True — one slot per
+                             design-time rule (semantic_rules.ONEHOT_ORDER).
+                             All zeros for a constraint outside that set, so the
+                             agent still knows one is present (via has_anomaly)
+                             but not which: exactly the blind case it faces
+                             today, and the point of the held-out split.
   [4]    sat1_battery_pct / 100      (SAT-1, BRAZIL)
   [5]    sat1_ram_free / 4096
   [6]    sat1_solar_charging
@@ -38,6 +44,8 @@ _SATS = [
     {"id": 2,  "region": "EUROPE", "capacity_wh": 50.0},
     {"id": 15, "region": "USA",    "capacity_wh": 100.0},
 ]
+from src import semantic_rules
+
 _REGION_IDX = {"USA": 0, "BRAZIL": 1, "EUROPE": 2}
 _IDX_REGION = {v: k for k, v in _REGION_IDX.items()}
 _RAM_TOTAL  = 4096.0
@@ -53,16 +61,32 @@ _ANOMALY_RATE = 0.10
 # letting the agent do better than ignoring the flag entirely.
 _ANOMALY_TYPES = ["hardware", "gdpr", "sovereignty"]
 
+# Os nomes internos acima existem desde a primeira versao; o registro de regras
+# e a fonte de verdade. O mapa liga os dois e e conferido no import, para que
+# renomear um token nao produza silenciosamente um one-hot desalinhado.
+_TYPE_TO_TOKEN = {
+    "gdpr":        "restricao_gdpr_europa",
+    "sovereignty": "restricao_soberania_brasil",
+    "hardware":    "falha_hardware_camera_esq",
+}
+assert set(_TYPE_TO_TOKEN.values()) == set(semantic_rules.ONEHOT_ORDER), (
+    "mapa de tipos do DRL fora de sincronia com semantic_rules.ONEHOT_ORDER")
+
 
 class NTNMECEnv(gym.Env):
     """Single-step routing decision environment for NTN-MEC satellites."""
 
     metadata = {"render_modes": []}
 
-    def __init__(self):
+    def __init__(self, observe_rule_type: bool = False):
+        """observe_rule_type=False reproduz o braco do artigo (13 dims, so o bit
+        has_anomaly). True adiciona o one-hot das regras conhecidas em tempo de
+        projeto — a paridade de informacao que o Revisor 3 pediu."""
         super().__init__()
+        self.observe_rule_type = observe_rule_type
+        n_obs = 13 + (len(semantic_rules.ONEHOT_ORDER) if observe_rule_type else 0)
         self.observation_space = spaces.Box(
-            low=0.0, high=1.0, shape=(13,), dtype=np.float32
+            low=0.0, high=1.0, shape=(n_obs,), dtype=np.float32
         )
         self.action_space = spaces.Discrete(4)  # 0=SAT1, 1=SAT2, 2=SAT15, 3=DROP
         self._task  = None
@@ -116,8 +140,10 @@ class NTNMECEnv(gym.Env):
         task = {
             "region":          task_region,
             "ram":             _TASK_RAM,
-            "semantic_anomaly": "anomaly" if has_anomaly else None,
-            "_anomaly_type":   anomaly_type,  # hidden — reward shaping only
+            # Guarda o token real da regra (e nao o literal "anomaly") para que
+            # treino e simulacao construam o one-hot pelo mesmo caminho.
+            "semantic_anomaly": _TYPE_TO_TOKEN[anomaly_type] if anomaly_type else None,
+            "_anomaly_type":   anomaly_type,  # usado pelo reward shaping
         }
         return task, fleet
 
@@ -129,6 +155,8 @@ class NTNMECEnv(gym.Env):
         region_oh = [0.0, 0.0, 0.0]
         region_oh[_REGION_IDX[self._task["region"]]] = 1.0
         has_anomaly = float(bool(self._task.get("semantic_anomaly")))
+        rule_oh = (semantic_rules.onehot(self._task.get("semantic_anomaly"))
+                   if self.observe_rule_type else [])
 
         sat_features = []
         for sat in self._fleet:
@@ -138,7 +166,8 @@ class NTNMECEnv(gym.Env):
                 float(sat["solar_charging"]),
             ]
 
-        return np.array(region_oh + [has_anomaly] + sat_features, dtype=np.float32)
+        return np.array(region_oh + [has_anomaly] + rule_oh + sat_features,
+                        dtype=np.float32)
 
     # ------------------------------------------------------------------ #
     # Action evaluation                                                    #

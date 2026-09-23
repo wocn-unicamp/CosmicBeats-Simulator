@@ -18,7 +18,7 @@ if __name__ == "__main__":
     
     # Argumento 1: O Motor (com opções restritas para evitar erros de digitação)
     parser.add_argument('--engine', type=str, default="LLM", 
-                        choices=["LLM", "BASELINE", "SLM", "DRL", "ORACLE"], 
+                        choices=["LLM", "BASELINE", "SLM", "DRL", "DRL_ONEHOT", "ORACLE"], 
                         help="Escolha o cérebro: LLM, BASELINE, SLM, DRL ou ORACLE")
     
     # Argumento 2: O arquivo de configuração JSON

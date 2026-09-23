@@ -3,8 +3,15 @@ Train DQN agent for NTN-MEC satellite routing.
 
 Usage:
     python scripts/train_drl.py [--timesteps N]
+    python scripts/train_drl.py --observe-rule-type   # braco de paridade
 
-Saves model to models/drl_agent.zip
+Duas variantes, em diretorios separados:
+    models/         obs de 13 dims, so o bit has_anomaly — o braco do artigo
+    models/onehot/  obs de 16 dims, com o one-hot das regras conhecidas
+
+A separacao e obrigatoria: o EvalCallback grava em <dir>/best_model.zip, que e
+o arquivo carregado pelo DRLScheduler. Treinar a variante no mesmo diretorio
+sobrescreveria silenciosamente o modelo que sustenta os resultados publicados.
 """
 
 import sys
@@ -20,22 +27,27 @@ from stable_baselines3.common.callbacks import EvalCallback
 from src.schedulers.drl_gym_env import NTNMECEnv
 
 
-def train(timesteps: int = 50_000):
+def train(timesteps: int = 50_000, observe_rule_type: bool = False):
+    outdir = "models/onehot" if observe_rule_type else "models"
+    variant = "one-hot das regras (16 dims)" if observe_rule_type else "bit cego (13 dims)"
+
     print(f"=== DQN Training: NTN-MEC Satellite Routing ===")
+    print(f"Variante  : {variant}")
     print(f"Timesteps : {timesteps:,}")
-    print(f"Obs space : {NTNMECEnv().observation_space}")
-    print(f"Act space : {NTNMECEnv().action_space}")
+    print(f"Obs space : {NTNMECEnv(observe_rule_type).observation_space}")
+    print(f"Act space : {NTNMECEnv(observe_rule_type).action_space}")
+    print(f"Saida     : {outdir}/")
     print()
 
-    os.makedirs("models", exist_ok=True)
+    os.makedirs(outdir, exist_ok=True)
 
-    train_env = Monitor(NTNMECEnv())
-    eval_env  = Monitor(NTNMECEnv())
+    train_env = Monitor(NTNMECEnv(observe_rule_type))
+    eval_env  = Monitor(NTNMECEnv(observe_rule_type))
 
     eval_callback = EvalCallback(
         eval_env,
-        best_model_save_path="models/",
-        log_path="models/",
+        best_model_save_path=outdir,
+        log_path=outdir,
         eval_freq=5_000,
         n_eval_episodes=500,
         deterministic=True,
@@ -62,7 +74,7 @@ def train(timesteps: int = 50_000):
 
     model.learn(total_timesteps=timesteps, callback=eval_callback, progress_bar=True)
 
-    save_path = "models/drl_agent"
+    save_path = os.path.join(outdir, "drl_agent")
     model.save(save_path)
     print(f"\nModelo salvo em: {save_path}.zip")
 
@@ -79,11 +91,16 @@ def train(timesteps: int = 50_000):
             obs, _ = eval_env.reset()
 
     print(f"Recompensa média: {total_reward / n_eval:.4f}")
-    print("Esperado > 0.80 para agente treinado (roteamento bem-sucedido)")
+    # Referencia medida, nao aspiracional: o checkpoint de 30k do braco cego
+    # atingiu 0.668. Com o one-hot espera-se valor mais alto, ja que o agente
+    # passa a poder distinguir as regras em vez de adivinhar uma unica acao.
+    print("Referência: 0.668 (melhor checkpoint do braço cego de 13 dims)")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--timesteps", type=int, default=50_000)
+    parser.add_argument("--observe-rule-type", action="store_true",
+                        help="treina a variante com one-hot das regras (16 dims)")
     args = parser.parse_args()
-    train(args.timesteps)
+    train(args.timesteps, args.observe_rule_type)
