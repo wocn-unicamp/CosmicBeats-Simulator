@@ -116,7 +116,7 @@ A Comparative Study}
     \addtolength{\textheight}{-0.1\baselineskip}
 \begin{abstract}
 \ac{MEC} over \ac{LEO} constellations introduces extreme constraints on task orchestration, including tight energy budgets driven by orbital eclipses, high-dynamic system topology, 
-millisecond-range decision windows, and heterogeneous computing payloads.
+bounded decision windows, and heterogeneous computing payloads.
 Beyond classical resource management, real-world tasks increasingly carry
 \emph{semantic constraints} that pure numerical optimizers cannot interpret, including data sovereignty laws, privacy regulations, and
 hardware-failure protocols. 
@@ -125,15 +125,14 @@ paradigms over the same 1{,}200-second scenario and identical 69-task workload:
 (i)~a greedy heuristic baseline, (ii)~a \ac{DRL} agent (SB3 DQN,
 50{,}000~training steps), (iii)~a \ac{SLM} simulating on-device \ac{NPU}
 inference (Gemma~4 26B, \SI{50}{\milli\second} benchmark latency), and
-(iv)~a \ac{LLM} cloud orchestrator (Gemini~3.1 Flash~Lite). On this workload the LLM attains
-full semantic and anomaly compliance (69/69 and 8/8; Wilson 95\%~CI
-94.7--100\% and 67.6--100\%) against 25\% anomaly compliance for the heuristic
-baseline---under an exact paired McNemar test the only pairwise difference
-reaching significance ($p=0.031$), the remaining orderings being
-indistinguishable at $n=8$. Under an explicitly declared energy model (a model,
-not a measurement) this costs three to four orders of magnitude more energy per
-decision, framing the compliance-vs-efficiency trade-off for NTN-MEC
-designers.
+(iv)~a \ac{LLM} cloud orchestrator (Gemini~3.1 Flash~Lite). The LLM attains full anomaly compliance (8/8; Wilson 95\%~CI 67.6--100\%)
+against 25\% for the heuristic ($p=0.031$, exact paired McNemar). A rule table,
+or a DRL agent given the rule type, matches it on these design-time rules; the
+difference emerges on unseen constraints stated in natural language, where the
+LLM keeps 20/20 while the rule table collapses to the heuristic and the SLM to a
+discard reflex. Decision energy, under a declared model, is orders of magnitude
+higher for the LLM yet negligible against the battery budget: the operative cost
+of semantic compliance is latency and dependence on a ground link.
 \end{abstract}
 \begin{IEEEkeywords}
 NTN-MEC, LEO satellite edge computing, deep reinforcement learning,
@@ -210,12 +209,11 @@ throughput alone. This paper fills that gap with the following contributions:
     single bit---and verify over 20 seeds that the agent sits at that bound
     (34.1\%, 95\%~CI 26.7--42.3). The limit is therefore the observation space,
     not DRL as a paradigm nor the training budget.
-  \item A characterisation of the compliance-vs-efficiency trade-off, reported
-    with paired significance tests and interval estimates: the LLM resolved all
-    semantic constraints presented to it, at an energy cost per decision that
-    our declared model places three to four orders of magnitude above the
-    heuristic baseline. We report which pairwise contrasts the sample size does
-    and does not support.
+  \item An information-parity evaluation: a rule table and a DRL agent given
+    the rule type match the LLM on design-time constraints, but on unseen
+    natural-language constraints only the LLM retains full compliance, while the
+    SLM behaves as a discard reflex. All contrasts are reported with paired
+    tests and interval estimates.
   \item An explicit \emph{parameter provenance audit} (Table~\ref{tab:params}):
     every simulation parameter is labelled either as grounded in cited
     literature or as a deliberate design choice, so that readers can separate
@@ -672,9 +670,10 @@ applies (GDPR vs.\ data sovereignty), information the DRL agent structurally
 lacks.
 
 SLM reaches 97.1\% SCR and
-75.0\% ACR (6/8). The 2 non-compliant cases arose
-from API network instability (residual after the thought-parts parsing fix),
-not reasoning errors---when the model responded, its decision was correct. LLM
+75.0\% ACR (6/8). An independent re-run on the same seed reproduces both
+figures but not the same two misses: one shifts, consistent with residual API
+instability, while the other recurs and in the re-run is a genuine reasoning
+error---a Brazilian-sovereignty task routed to Europe. LLM
 attains 100.0\% on both metrics (69/69 and 8/8), consistent with the hypothesis
 that reading and applying rules stated in natural language dominates both the
 fixed heuristic and the purely numerical RL agent. We deliberately report this
@@ -683,52 +682,23 @@ as a point estimate on a single workload rather than as a demonstrated ceiling:
 the data are equally consistent with a true compliance rate near 70\%.
 
 \paragraph*{Statistical resolution at $n=8$}
-Because all four engines consume the identical task sequence the comparison is
-\emph{paired}, admitting McNemar's exact test---more powerful than contrasting
-independent rates. Even so, only one of the six pairwise contrasts is
-significant at $\alpha=0.05$: LLM versus BASELINE (6 discordant pairs, all
-favouring LLM; $p=0.031$). LLM versus DRL falls just short ($5/0$; $p=0.0625$),
-SLM versus DRL is unresolved ($3/0$; $p=0.250$), and DRL versus BASELINE is
-indistinguishable from noise ($2/3$; $p=1.000$). The ordering
-BASELINE $<$ DRL $<$ SLM $<$ LLM is thus a consistent \emph{trend}, not an
-established ranking: at $n=8$ a single reclassification moves ACR by 12.5~pp.
-The contrast the abstract states---semantic-reasoning engine versus numerical
-heuristic---is the one the evidence supports. Pooling 10--20 seeds
-(80--160 anomaly-carrying tasks) would narrow the ACR intervals to
-$\pm5$--$7$~pp and resolve the rest.
+All engines consume the identical task sequence, so the comparison is paired and
+admits McNemar's exact test. Even so, only LLM versus BASELINE is significant
+($6/0$; $p=0.031$); LLM versus DRL ($5/0$; $p=0.0625$), SLM versus DRL ($3/0$;
+$p=0.250$) and DRL versus BASELINE ($2/3$; $p=1.000$) are not. At $n=8$ one
+reclassification moves ACR by 12.5~pp, so the ordering is a trend, not a
+ranking.
 
 \paragraph*{Multi-seed replication}
-We ran that replication for the two deterministic engines: 20 independent
-seeds, 1{,}337 paired tasks, 138 anomaly-carrying. (The language-model engines
-issue one API call per task and their replication is bounded by provider quota;
-it is in progress.) Across seeds BASELINE reaches 26.8\% ACR (Wilson 95\%~CI
-20.1--34.8) and DRL 34.1\% (26.7--42.3), with the paired difference
-statistically null (McNemar $p=0.320$). The single-run DRL advantage over
-BASELINE therefore \emph{does not replicate}, confirming the caution above.
-What does replicate, and more sharply, is the information-theoretic argument.
-A policy that cannot read the rule can do no better, in expectation, than the
-probability that a single fixed action is the right one. With the three rule
-types equiprobable, that bound is $1/3$, whichever action the policy settles
-on---and it is reached, not exceeded, by always discarding. The pooled DRL
-figure, 34.1\% (26.7--42.3), sits on that bound; in the single run it was
-37.5\% (3 of 8), whose apparent margin the wide interval at $n=8$ does not
-support. The binding limitation is therefore the observation space, exactly as
-claimed, and not the amount of training: eight times the training budget leaves
-the figure unchanged, whereas giving the agent the rule type moves it to full
-compliance (Section~\ref{sec:conclusion}).
-
-The per-anomaly breakdown of the 8 constrained tasks (3~hardware-failure,
-3~GDPR, 2~data-sovereignty) makes the compliance ceilings concrete. The
-mandatory-discard hardware cases are the \emph{only} ones identifiable from a
-binary flag: DRL captures exactly these 3 (its 3 correct drops), which is why it
-plateaus at 3/8, while BASELINE---which never discards when a candidate
-exists---resolves only the 2 anomaly tasks whose origin region happens to
-coincide with the rule-mandated region. The 5 GDPR and sovereignty tasks demand
-routing to a \emph{specific} region determined by the rule text; SLM parses this
-correctly for 6/8 (missing 2 to transient API errors, not logic), and LLM for
-all 8/8. The monotone progression 2$\rightarrow$3$\rightarrow$6$\rightarrow$8
-thus tracks precisely how much semantic information each paradigm can access,
-from none (geographic coincidence) to full natural-language rule comprehension.
+For the deterministic engines we ran 20 independent seeds (1{,}337 paired tasks,
+138 anomaly-carrying). BASELINE reaches 26.8\% ACR (Wilson 95\%~CI 20.1--34.8)
+and DRL 34.1\% (26.7--42.3), a statistically null difference (McNemar
+$p=0.320$): the single-run DRL advantage does not replicate. A policy that cannot
+read the rule does no better, in expectation, than the chance that one fixed
+action is right; with three equiprobable rule types that bound is $1/3$, and the
+pooled DRL figure sits on it. The limitation is the observation space, not DRL
+as such: given the rule type, the same agent reaches full compliance
+(Section~\ref{sec:generalization}).
 
 \subsection{Energy Efficiency}
 \label{sec:energy}
@@ -753,6 +723,12 @@ Instrumenting the local engines with \ac{RAPL} counters and deriving the remote
 ones from measured token counts is left to future work; the qualitative
 ordering is robust to any plausible revision of these constants.
 
+Against the battery budget, however, decision energy is small: the LLM's
+\SI{345}{\joule} over the run is 0.19\% of the smallest (\SI{50}{\watt\hour})
+battery, and under the same model executing a single task costs as much as
+about 720 LLM decisions. The operative cost of semantic compliance is therefore
+latency and dependence on a ground link, not energy.
+
 At simulation end under the BASELINE engine the fleet retained
 61.9\% (SAT-1, Brazil, 75~Wh, in sunlight), 21.8\% (SAT-2, Europe, 50~Wh, in
 eclipse) and 53.4\% (SAT-15, USA, 100~Wh, in eclipse) \ac{SoC}. SAT-2 ended
@@ -760,27 +736,19 @@ only 1.8~percentage points above the 20\% safety threshold, confirming that the
 pessimistic eclipse model (Section~\ref{sec:sysmodel}) generates real,
 measurable energy pressure within the 20-minute window.
 
-This choice ($\approx$53\% eclipse against $\approx$35\% in the
-literature~\cite{sumanth2019}) does not affect the engines symmetrically, and
-the asymmetry runs \emph{against} the engines we report most favourably.
-BASELINE is battery-greedy, so a deeper eclipse mostly reshuffles which
-satellite it picks, leaving throughput intact; the rule-driven engines have no
-such freedom, since a GDPR or sovereignty constraint pins the decision to one
-region and a depleted satellite there leaves discarding as the only compliant
-action. The pessimistic setting is therefore conservative with respect to our
-conclusions. No battery-forced compliance drop materialised in this run---the
-LLM's three drops are all mandatory hardware discards---so this is a structural
-sensitivity argument; quantifying it needs an eclipse-fraction sweep.
+The pessimistic eclipse ($\approx$53\% vs.\ $\approx$35\%
+in~\cite{sumanth2019}) penalises the rule-driven engines more than BASELINE: a
+battery-greedy heuristic just picks another satellite, whereas a GDPR or
+sovereignty rule pins one region, leaving discard as the only compliant action if
+that satellite is depleted. The setting is thus conservative toward our
+conclusions; no such forced drop occurred here, so quantifying it needs an
+eclipse sweep.
 
 
-By Little's Law (Eq.~\ref{eq:ram}), expected steady-state RAM utilisation is
-$\approx$16\%. The time-weighted observed values are BASELINE
-13.7\%, DRL 12.1\%, SLM
-12.3\%, LLM 13.1\%---close
-to the theoretical prediction. Differences across engines are driven by drop
-rates (fewer accepted tasks $\Rightarrow$ lower average occupancy), confirming
-RAM was not the bottleneck: drops reflect semantic and battery constraints, not
-queue exhaustion.
+Time-weighted RAM utilisation (BASELINE 13.7\%, DRL 12.1\%, SLM 12.3\%,
+LLM 13.1\%) sits near the $\approx$16\% Little's-Law prediction
+(Eq.~\ref{eq:ram}); RAM never binds, so drops reflect semantic and battery
+constraints, not queue exhaustion.
 
 \subsection{Latency and Throughput}
 
@@ -790,70 +758,108 @@ arrival rate. SLM operates at the NPU benchmark (\SI{50}{\milli\second}), and
 LLM incurs a full round-trip to the ground station
 (median \SI{955}{\milli\second}, IQR \numrange{877}{1131}~ms; the
 \SI{6112}{\milli\second} run mean reflects free-tier rate-limit back-off on 10
-of 69 calls rather than inference or propagation cost). From a throughput
+of 69 calls rather than inference or propagation cost). The relevant budget
+here is set by task arrivals: at $\lambda=4$~tasks/min the mean inter-arrival
+time is 15~s, of which the LLM's median decision uses 6.4\%, so all four engines
+meet it. Millisecond budgets, typical of link-layer scheduling rather than task
+placement, would exclude the cloud LLM. From a throughput
 perspective, BASELINE accepts all 69 tasks (zero drops); DRL and
 SLM each drop $\approx$10\%, and LLM drops only 3 tasks---all
 three of which are semantically correct mandatory discards (hardware-failure
 protocol), yielding a 100\% effective success rate among tasks the LLM chose
 to accept.
 
+\subsection{Information Parity and Unseen Constraints}
+\label{sec:generalization}
+
+The comparison above is asymmetric: DRL sees one bit while the language models
+read the rule. To separate information from capability we add two control arms
+and a second rule set. ORACLE is a hand-coded table of the three design-time
+rules, with the greedy heuristic as fallback; DRL-OH is the same DQN retrained
+with a one-hot encoding of those rules (16-dimensional state). The unseen set
+holds six constraints absent from every engine's design---US HIPAA and ITAR,
+Brazilian LGPD, an EU data-residency paraphrase and two new hardware
+faults---delivered to the task only as a natural-language sentence. Its share of
+discard rules matches the design-time set (1/3), so the blind-policy bound is
+the same in both.
+
+\begin{table}[!t]
+\centering
+\caption{Anomaly Compliance on Design-Time vs.\ Unseen Constraints}
+\label{tab:generalization}
+\footnotesize
+\begin{tabular}{lcc}
+\toprule
+\textbf{Engine} & \textbf{Design-time rules} & \textbf{Unseen rules} \\
+\midrule
+BASELINE & 26.8\% & 30.0\% \\
+ORACLE   & 100.0\% & 30.0\% \\
+DRL      & 34.1\% & 30.0\% \\
+DRL-OH   & 100.0\% & 50.0\% \\
+SLM      & 75.0\%$^{\dagger}$ & 50.0\% \\
+LLM      & 100.0\%$^{\dagger}$ & \textbf{100.0\%} \\
+\bottomrule
+\end{tabular}
+
+{\scriptsize
+Design-time: 20 seeds, $n=138$ anomaly-carrying tasks;
+$^{\dagger}$canonical run, $n=8$. Unseen: 3 seeds, $n=20$, paired across all
+six engines.}
+\end{table}
+
+Table~\ref{tab:generalization} shows the result. On design-time rules ORACLE and
+DRL-OH both reach 100\% (Wilson 95\%~CI 97.3--100): at this scale enumerating
+the rules suffices, and a language model is not required. On unseen rules the
+picture inverts. ORACLE takes exactly the same decision as BASELINE on every task
+(0~discordant pairs)---it does not fail loudly, it silently stops noticing the
+obligation. Only the LLM remains at full compliance (20/20; McNemar against
+BASELINE 14/0, $p=0.0001$). DRL-OH and SLM both reach 50\%, but decomposing by
+obligation shows a discard reflex rather than rule reading: both discard all
+five fault tasks, yet on the fifteen that require routing to a specific region
+they solve 5 each, against the heuristic's 6 and the LLM's 15. The distinction
+that matters is therefore which language model, not language model versus
+numerical optimiser.
+
 \section{Conclusion}
 \label{sec:conclusion}
 
-This paper presented the first controlled comparison of four orchestration
+This paper presented a controlled comparison of four orchestration
 paradigms---greedy heuristic, DRL, embedded \ac{SLM}, and centralized
-\ac{LLM}---in a semantics-aware NTN-MEC simulation. On the workload studied,
-the LLM resolved every semantic constraint it was given (69/69 tasks, 8/8
-anomaly-carrying) by parsing natural-language rules, whereas BASELINE and DRL
-reached 25\% and 38\% anomaly compliance
-respectively, lacking any mechanism to read the rule. Under an exact paired
-test, the LLM-versus-heuristic gap is statistically established ($p=0.031$);
-the intermediate orderings are trends that the present sample size
-($n=8$ anomaly-carrying tasks, single seed) cannot resolve.
+\ac{LLM}---in a semantics-aware NTN-MEC simulation, extended with two control
+arms that equalise information. On the design-time rules the LLM resolved every
+constraint (8/8, $p=0.031$ against the heuristic), but so do a hand-coded rule
+table and a DRL agent given the rule type. What separates the LLM is
+generalisation: on unseen natural-language constraints it stayed at 20/20, while
+the rule table reverted to the heuristic and both DRL-OH and the SLM fell back
+on a discard reflex.
 
-Three structural trade-offs define the applicability of each paradigm:
-(1)~\emph{Cognitive capacity vs.\ operational cost}: SLM and LLM correctly
-handle semantic constraints that BASELINE and DRL cannot identify---at higher
-latency and, under the declared per-decision energy model of
-Section~\ref{sec:energy}, three to four orders of magnitude higher energy cost.
+Three trade-offs define where each paradigm fits:
+(1)~\emph{Enumerated vs.\ open-ended constraints}: when every rule is known at
+design time, a table or an informed DRL agent is sufficient and cheaper; a
+language model earns its place only when constraints arrive that no one
+enumerated.
 (2)~\emph{Latency vs.\ context richness}: BASELINE and DRL decide in
-microseconds from a minimal state vector; SLM and LLM pay latency proportional
-to the reasoning complexity required.
-(3)~\emph{Reward-shaped learning vs.\ explicit rules}: reward shaping moved DRL
-nominally above BASELINE on both metrics, although that specific gap is not
-statistically resolvable here ($p=1.000$). The ceiling, however, is structural
-and analytic rather than empirical---without observing the anomaly type, no
-policy over this observation space can exceed 3/8, whereas zero-shot LLM/SLM
-read the rule directly.
+microseconds; the cloud LLM needs about a second, well within the 15~s arrival
+budget of this scenario but not within millisecond budgets.
+(3)~\emph{Energy}: under the declared model, decision energy differs by three to
+four orders of magnitude across engines yet stays below 0.2\% of the battery,
+so it is not the binding cost.
 
 \subsection*{Limitations}
-Three limitations bound these conclusions. First, the comparison is
-\emph{asymmetric by construction}: DRL observes a single anomaly-present bit
-while SLM and LLM receive the rule text. This isolates the value of semantic
-parsing, but it means the 37.5\% ceiling characterises \emph{this observation
-space}, not DRL as a paradigm---given a one-hot encoding of the three rule
-types, a DRL agent (or a three-entry lookup table) should approach full
-compliance. Second, the semantic space is small and closed: three enumerated
-tokens whose ground truth is a three-branch predicate. That scale does not by
-itself justify a language model, and these results should not be read as
-establishing that it does; the claim a language model can uniquely support is
-\emph{generalisation to constraints not enumerated at design time}, which this
-experiment does not test. Third, the workload is light ($\lambda=4$~tasks/min,
-12--14\% RAM occupancy), so the resource constraint never binds: the drop-rate
-and utilisation findings describe an unsaturated regime, and the single-step
-($\gamma=0$) formulation is appropriate precisely because temporal coupling is
-weak. Our ongoing work addresses all three---an information-parity DRL arm and
-a rule-table oracle, evaluated against a held-out corpus of unseen,
-compositional natural-language constraints, under load high enough for RAM to
-bind.
+Four limitations bound these conclusions. The workload is light
+($\lambda=4$~tasks/min, 12--14\% RAM occupancy), so the resource constraint never
+binds: drop-rate and utilisation findings describe an unsaturated regime, and the
+single-step ($\gamma=0$) formulation is appropriate precisely because temporal
+coupling is weak. The unseen-rule evaluation uses six rules and three seeds for
+the language models---enough to separate the LLM from every other engine, not
+the SLM from DRL-OH. Per-decision energy is a declared model, not a
+measurement. And the SLM is emulated through a remote API with a benchmark
+latency rather than run on an NPU.
 
-Further directions for future work include: (a)~a hybrid macro-micro architecture
-(LLM for periodic policy reconfiguration; SLM/DRL for high-frequency task-level
-decisions), along the lines suggested by Lee and Park~\cite{lee2024};
-(b)~longer simulation windows ($\geq$2~hours) to cover multiple complete eclipse
-cycles and allow DRL convergence on the full state distribution; (c)~higher-load
-stress scenarios ($\lambda \geq 12$~tasks/min) to saturate RAM and decouple
-queuing effects from semantic compliance effects.
+Future work includes a hybrid macro-micro architecture (LLM for periodic
+policy reconfiguration, SLM/DRL for per-task decisions)~\cite{lee2024}, longer
+windows ($\geq$2~h) spanning several eclipse cycles, and loads
+($\lambda\geq12$~tasks/min) high enough for RAM to bind.
 
 \FloatBarrier
 \begin{thebibliography}{10}

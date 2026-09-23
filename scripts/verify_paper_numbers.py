@@ -136,6 +136,96 @@ def check_multiseed(c: Checker, logs_dir: str) -> None:
     c.expect("teto cego declarado como 1/3", r"bound is $1/3$", src)
 
 
+def check_generalization(c: Checker, repo: str) -> None:
+    """Tabela de generalizacao (Secao V-D): conhecidas vs. ineditas.
+
+    Coluna das ineditas recomputada sobre as tarefas pareadas entre os SEIS
+    motores (os deterministicos vivem em heldout/, os remotos em heldout_lm/).
+    E o pareamento que torna o McNemar valido, entao o n do texto tem de ser o
+    da intersecao, nao o de cada motor isolado.
+    """
+    import csv as _csv
+    from analyze_results import mcnemar_exact, wilson_ci
+    sys.path.insert(0, repo)
+    from src import semantic_rules as sr
+
+    engines = ["BASELINE", "ORACLE", "DRL", "DRL_ONEHOT", "SLM", "LLM"]
+    lm_dir = os.path.join(repo, "logs/generalization/heldout_lm")
+    det_dir = os.path.join(repo, "logs/generalization/heldout")
+    if not os.path.isdir(lm_dir):
+        print("  (pulando generalizacao: sem dados de SLM/LLM nas ineditas)")
+        return
+    seeds = sorted(int(d[4:]) for d in os.listdir(lm_dir) if d.startswith("seed"))
+    data = {e: {} for e in engines}
+    for s_ in seeds:
+        for e in engines:
+            base = lm_dir if e in ("SLM", "LLM") else det_dir
+            path = os.path.join(base, f"seed{s_}", f"mec_metrics_{e}.csv")
+            if not os.path.exists(path):
+                continue
+            with open(path, newline="") as fh:
+                for r in _csv.DictReader(fh):
+                    if r["anomaly"]:
+                        data[e][f"{s_}:{r['task_id']}"] = (int(r["semantic_compliant"]), r["anomaly"])
+    keys = sorted(set.intersection(*[set(v) for v in data.values()]))
+    src = "logs/generalization/heldout{,_lm}/seed*/"
+    n = len(keys)
+    c.expect("n pareado nas ineditas", f"$n={n}$, paired across all", src)
+    c.expect("sementes das ineditas", f"Unseen: {len(seeds)} seeds", src)
+    for e in engines:
+        k = sum(data[e][x][0] for x in keys)
+        c.expect(f"ineditas {e}", f"{100 * k / n:.1f}\\%", src)
+
+    b01 = sum(1 for x in keys if data["LLM"][x][0] == 1 and data["BASELINE"][x][0] == 0)
+    b10 = sum(1 for x in keys if data["LLM"][x][0] == 0 and data["BASELINE"][x][0] == 1)
+    c.expect("McNemar LLM vs BASELINE (ineditas)", f"{b01}/{b10}", src)
+    assert mcnemar_exact(b01, b10) < 0.00015, mcnemar_exact(b01, b10)
+    c.expect("p do LLM nas ineditas", "$p=0.0001$", src)
+    oracle_disc = sum(1 for x in keys if data["ORACLE"][x][0] != data["BASELINE"][x][0])
+    assert oracle_disc == 0, f"ORACLE deixou de ser identico ao BASELINE ({oracle_disc})"
+    c.expect("ORACLE identico ao BASELINE", "0~discordant pairs", src)
+
+    # Decomposicao: o texto afirma que, nas regras de REGIAO, DRL-OH e SLM
+    # resolvem 5 cada, contra 6 do BASELINE e 15 do LLM.
+    region = [x for x in keys if not sr.BY_TOKEN[data["BASELINE"][x][1]].must_drop]
+    tot = {e: sum(data[e][x][0] for x in region) for e in engines}
+    words = {15: "fifteen", 11: "eleven", 14: "fourteen", 16: "sixteen"}
+    c.expect("n de tarefas de regiao", f"on the {words.get(len(region), len(region))} that", src)
+    assert tot["DRL_ONEHOT"] == tot["SLM"], (tot["DRL_ONEHOT"], tot["SLM"])
+    c.expect("DRL-OH e SLM nas de regiao", f"they solve {tot['SLM']} each", src)
+    c.expect("BASELINE nas de regiao", f"heuristic's {tot['BASELINE']}", src)
+    c.expect("LLM nas de regiao", f"the LLM's {tot['LLM']}", src)
+
+    # Coluna das conhecidas: deterministicos em 20 sementes.
+    import json as _json
+    t20 = os.path.join(repo, "logs/generalization/table20.json")
+    if os.path.exists(t20):
+        seen = _json.load(open(t20))["splits"]["seen"]
+        for e in ("BASELINE", "ORACLE", "DRL", "DRL_ONEHOT"):
+            v = seen["engines"][e]
+            c.expect(f"conhecidas {e}", f"{100 * v['k'] / v['n']:.1f}\\%", t20)
+        lo, hi = seen["engines"]["ORACLE"]["wilson"]
+        c.expect("IC do ORACLE nas conhecidas", f"{100 * lo:.1f}--100", t20)
+
+
+def check_reviewer2_budgets(c: Checker) -> None:
+    """Respostas ao Revisor 2: janela de latencia e adequacao energetica.
+
+    Recomputadas das constantes do proprio simulador, para que o texto nao
+    diverja silenciosamente se alguma delas mudar.
+    """
+    lam_per_s = 4.0 / 60.0                   # ai_logic: lambda_rate
+    llm_median_s = 0.955                     # mediana medida (Secao V-C)
+    smallest_bat_J = 50 * 3600.0             # 50 Wh (SAT-2)
+    llm_run_J = 5.0 * 69                     # JOULES_PER_DECISION['LLM'] x 69
+    task_J = 0.02 * smallest_bat_J           # TASK_ENERGY_COST_PCT = 2%
+    src = "src/ai_logic.py (constantes do modelo)"
+    c.expect("intervalo medio entre chegadas", f"{1 / lam_per_s:.0f}~s", src)
+    c.expect("fracao da janela usada pelo LLM", f"{100 * llm_median_s * lam_per_s:.1f}\\%", src)
+    c.expect("energia do LLM vs menor bateria", f"{100 * llm_run_J / smallest_bat_J:.2f}\\%", src)
+    c.expect("tarefa vs decisao do LLM", f"about {task_J / 5.0:.0f} LLM decisions", src)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -151,6 +241,10 @@ def main() -> int:
     check_single_run(c, args.logs_dir)
     print("verificando a replicacao multi-semente...")
     check_multiseed(c, args.multiseed_dir)
+    print("verificando a tabela de generalizacao...")
+    check_generalization(c, REPO)
+    print("verificando as respostas ao Revisor 2...")
+    check_reviewer2_budgets(c)
     return c.report()
 
 

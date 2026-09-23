@@ -392,6 +392,104 @@ refutá-la.
 
 ---
 
+## Parte VII — Auditoria final de cobertura (23/09)
+
+Conferência item a item dos pedidos dos revisores contra o `.tex`. Revelou duas
+perguntas do Revisor 2 sem resposta — e as duas atingem o enquadramento do artigo.
+
+### VII.1 "Qual a faixa realista de latência neste cenário?" — sem resposta
+
+O abstract promete *"millisecond-range decision windows"*. O cenário simulado não tem
+janela de milissegundos: com chegadas Poisson de λ = 4/min, o intervalo médio entre
+tarefas é **15 s**, e a latência mediana do LLM (0,955 s) ocupa **6,4%** dele.
+
+Duas consequências. A frase do abstract não é sustentada pelo próprio cenário. E, pior,
+ela desqualificaria o LLM: se a janela fosse de milissegundos, um motor de ~1 s estaria
+fora. A resposta honesta é que a janela operante é de segundos, e nela o LLM é viável.
+
+### VII.2 "A energia por decisão é adequada para uso real?" — sem resposta, e a resposta enfraquece a tese
+
+Relacionando a energia de decisão com o orçamento de bateria que o próprio artigo declara
+(75 / 50 / 100 Wh), sob as constantes do próprio modelo:
+
+| motor | 69 decisões | fração da menor bateria (50 Wh = 180.000 J) |
+|---|---|---|
+| BASELINE | 0,069 J | 0,00004% |
+| DRL | 0,345 J | 0,00019% |
+| SLM | 6,9 J | 0,00383% |
+| LLM | 345 J | **0,19%** |
+
+E **executar uma única tarefa** (2% de SoC no código) custa 3.600 J na menor bateria —
+**720×** o custo de uma decisão do LLM.
+
+Ou seja: sob as premissas do próprio artigo, **o custo energético de decidir é desprezível
+frente ao custo de executar**, mesmo para o LLM. O "trade-off conformidade vs.
+eficiência" que o artigo apresenta como resultado central é quantitativamente vazio no
+orçamento do satélite. A pergunta do revisor responde-se com "sim, é adequada" — e
+justamente por isso a energia por decisão não é o eixo que o artigo diz ser.
+
+Ressalva: as duas grandezas (5 J por decisão e 2% por tarefa) são premissas de modelo,
+não medições. A comparação é consistência interna do modelo, não fato físico. Ainda
+assim, é o modelo que o artigo usa para afirmar o trade-off.
+
+### VII.3 Branch desatualizada
+
+A versão final do artigo (multi-semente + correção do teto) está apenas em
+`faixa2/multiseed-infra`. A branch `camera-ready/wpmc2026-reviewer-response` ficou
+26 linhas atrás. Submeter a partir dela entregaria a versão antiga.
+
+---
+
+## Parte VIII — Segunda rodada do camera-ready (23/09)
+
+Prazo efetivo: **30/09/2026** (registro de *Symposium Papers*, categoria deste artigo).
+O artigo segue em **6 páginas**, sem erros de compilação, e o verificador passou de 30
+para **54 valores** conferidos contra os dados.
+
+### VIII.1 O que entrou no artigo
+
+- **Nova Seção V-D e Tabela IV** — paridade de informação e restrições inéditas. É a
+  resposta direta ao Revisor 3, antes presente só como "trabalho em andamento".
+- **Resposta ao Revisor 2 sobre latência** (§V-C): a janela operante é o intervalo entre
+  chegadas, 15 s; o LLM usa 6,4% dela. Orçamentos de milissegundos — típicos de
+  escalonamento de enlace, não de alocação de tarefa — excluiriam o LLM. O abstract
+  deixou de prometer *"millisecond-range decision windows"*.
+- **Resposta ao Revisor 2 sobre adequação energética** (§V-B): a energia de decisão do LLM
+  é 0,19% da menor bateria, e executar uma tarefa custa cerca de 720 decisões do LLM. O
+  abstract e a conclusão foram reescritos: o custo operante da conformidade é latência e
+  dependência de enlace com a estação terrena, não energia.
+- **Tese reformulada** no abstract, na contribuição 3 e na conclusão: nas regras de
+  projeto, tabela e DRL informado bastam; o LLM se distingue na generalização.
+- *Limitations* reescrita: os dois primeiros itens foram resolvidos pela Seção V-D e
+  saíram; entraram o tamanho do corpus inédito, a energia como modelo e o SLM emulado.
+
+Para caber, foram comprimidos os parágrafos de resolução estatística, replicação
+multi-semente, eclipse, Lei de Little e trabalho futuro, e removida a quebra por anomalia
+da §V-A. Nenhum número verificado foi perdido.
+
+### VIII.2 Duas afirmações do artigo que estavam erradas
+
+**"Os 2 erros do SLM foram instabilidade de API, não raciocínio."** Desmentida pela
+reexecução independente da semente 0. Ela reproduz os mesmos números (97,1% / 75,0%),
+mas não os mesmos erros: a tarefa 44 passou a acertar e a 26 passou a errar, o que é
+consistente com instabilidade — porém a tarefa 43 errou nas duas execuções, e na
+reexecução o modelo **respondeu, e respondeu errado**: roteou uma tarefa de soberania
+brasileira para EUROPE. É erro de raciocínio. Texto corrigido.
+
+**"Oito vezes mais treino não muda o número"** — afirmação que eu mesmo havia escrito no
+parágrafo multi-semente, aplicada ao DRL cego. O experimento de treinar 8× mais foi feito
+no DRL_ONEHOT, e o número não mudou por causa do bug do `_resolve_action`, não por
+limitação do espaço de observação. Aplicado ao DRL cego, não tinha lastro. Removida. A
+versão da contribuição 2 permanece, porque lá o argumento é analítico: nenhum treino
+supera o limite de 1/3 de uma política que não lê a regra.
+
+### VIII.3 Situação das lacunas da Parte VII
+
+- VII.1 (latência) e VII.2 (energia): **resolvidas** no texto.
+- VII.3 (branch desatualizada): **resolvida** — as branches foram consolidadas.
+
+---
+
 ## Apêndice — Como verificar
 
 Tudo abaixo roda a partir do repositório, sem chave de API (exceto os motores remotos).
