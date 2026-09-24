@@ -1040,8 +1040,12 @@ diferente: 1.024 tokens no SLM, com raciocínio, e 128 no LLM, sem raciocínio.
   mudar o número de páginas: trocar "discard reflex" por uma frase que atribua o
   resultado à configuração. Por exemplo: "with a 1,024-token output budget the SLM
   often exhausts it reasoning about region constraints, so this figure reflects the
-  configuration as much as the model." A mudança entra pela worktree da branch do
-  camera-ready, e o verificador de números precisa continuar 58/58.
+  configuration as much as the model." **Feito em 24/09, com a aprovação do
+  autor (commit `5e39874` no camera-ready, levado para a extended por merge).** As
+  quatro ocorrências (resumo, contribuições, discussão da Tabela IV, conclusão) agora
+  atribuem o resultado ao orçamento de tokens. A discussão diz "a third to a half of
+  its region errors", ou seja, 3/9 nas sementes 0–2 e 12/26 nas sementes 0–9.
+  Verificador 58/58, 6 páginas, PDF atualizado em `paper/revised-camera-ready.pdf`.
 
 **Limites.** São 13 tarefas e uma sondagem por orçamento. A conformidade na leitura "se o
 alvo mandasse" é contrafactual e foi calculada com a frota do prompt, em que a bateria está
@@ -1086,8 +1090,9 @@ casos com regra.
 >
 > **Atualização de 24/09:** o LLM está sendo vigiado por `scripts/wait_and_run_llm.sh`
 > (versionado; sobrevive a desligar a máquina). O item 3 abaixo foi **feito**: veja a IX.9.3.
-> Ele gerou uma pendência nova para o camera-ready, a frase "discard reflex" do SLM, que
-> depende da decisão do autor.
+> Ele gerou uma mudança no camera-ready, na frase "discard reflex" do SLM, **já
+> aplicada** (IX.9.3). A única pendência do camera-ready agora é a frase "o LLM mantém 20/20",
+> que depende da semente 2 do LLM.
 >
 > **3. ~~Pendência aberta: o teste do `finishReason` do SLM.~~ Feito (IX.9.3).** Registrar o `finishReason` da
 > API no `slm_scheduler.py` e reexecutar só as 13 tarefas com `parse_failure`, para testar se
