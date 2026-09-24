@@ -1,0 +1,266 @@
+[
+  {
+    "seed": 0,
+    "task_id": 12,
+    "anomaly": "falha_calibracao_sensor_termico",
+    "region": "USA",
+    "prefilter": false,
+    "old_decision": "",
+    "old_compliant": 1,
+    "fleet": [
+      {
+        "id": 1,
+        "region": "BRAZIL",
+        "battery_pct": 89.2,
+        "solar_charging": true,
+        "ram_free": 3596.0
+      },
+      {
+        "id": 2,
+        "region": "EUROPE",
+        "battery_pct": 64.2,
+        "solar_charging": true,
+        "ram_free": 3096.0
+      },
+      {
+        "id": 15,
+        "region": "USA",
+        "battery_pct": 81.4,
+        "solar_charging": false,
+        "ram_free": 4096.0
+      }
+    ],
+    "prompt": "You are a centralized satellite network orchestrator managing a Low-Earth-Orbit constellation.\nInter-satellite links (ISL) are always available — connectivity is never the bottleneck.\nOutput ONLY valid JSON — no markdown, no explanation.\n\nTASK: id=12, region=USA, ram=500 MB, anomaly=\"falha_calibracao_sensor_termico\"\n  constraint: The thermal sensor lost calibration before this acquisition, so the product is invalid and must be discarded.\n\nAVAILABLE SATELLITES:\n  SAT 1 | region=BRAZIL | battery_pct=89% | solar_charging=True | ram_free=3596.0 MB\n  SAT 2 | region=EUROPE | battery_pct=64% | solar_charging=True | ram_free=3096.0 MB\n  SAT 15 | region=USA | battery_pct=81% | solar_charging=False | ram_free=4096.0 MB\n\nROUTING RULES (apply in order):\n  1. EU data privacy / GDPR anomaly: route to the EUROPE satellite (return its satellite_id=ID).\n     Ignore task origin region. Drop only if no EUROPE satellite meets battery/RAM requirements.\n  2. Data sovereignty / national jurisdiction anomaly (e.g. soberania_brasil): route to the\n     satellite in the required country (Brazil→SAT in BRAZIL region). Drop only if unavailable.\n  3. Critical hardware failure (broken sensor/camera): drop task entirely (satellite_id=null).\n  4. No anomaly: route to any satellite in the task's region with battery_pct > 20% and sufficient RAM.\n\nOutput ONLY valid JSON:\n{\"satellite_id\": <integer id or null>, \"reason\": \"one short sentence\"}\n"
+  },
+  {
+    "seed": 0,
+    "task_id": 22,
+    "anomaly": "falha_bateria_celula_critica",
+    "region": "BRAZIL",
+    "prefilter": false,
+    "old_decision": "",
+    "old_compliant": 1,
+    "fleet": [
+      {
+        "id": 1,
+        "region": "BRAZIL",
+        "battery_pct": 87.4,
+        "solar_charging": true,
+        "ram_free": 3096.0
+      },
+      {
+        "id": 2,
+        "region": "EUROPE",
+        "battery_pct": 60.4,
+        "solar_charging": true,
+        "ram_free": 4096.0
+      },
+      {
+        "id": 15,
+        "region": "USA",
+        "battery_pct": 75.4,
+        "solar_charging": false,
+        "ram_free": 4096.0
+      }
+    ],
+    "prompt": "You are a centralized satellite network orchestrator managing a Low-Earth-Orbit constellation.\nInter-satellite links (ISL) are always available — connectivity is never the bottleneck.\nOutput ONLY valid JSON — no markdown, no explanation.\n\nTASK: id=22, region=BRAZIL, ram=500 MB, anomaly=\"falha_bateria_celula_critica\"\n  constraint: A critical battery cell fault corrupted the acquisition for this task; the data cannot be trusted and must be discarded.\n\nAVAILABLE SATELLITES:\n  SAT 1 | region=BRAZIL | battery_pct=87% | solar_charging=True | ram_free=3096.0 MB\n  SAT 2 | region=EUROPE | battery_pct=60% | solar_charging=True | ram_free=4096.0 MB\n  SAT 15 | region=USA | battery_pct=75% | solar_charging=False | ram_free=4096.0 MB\n\nROUTING RULES (apply in order):\n  1. EU data privacy / GDPR anomaly: route to the EUROPE satellite (return its satellite_id=ID).\n     Ignore task origin region. Drop only if no EUROPE satellite meets battery/RAM requirements.\n  2. Data sovereignty / national jurisdiction anomaly (e.g. soberania_brasil): route to the\n     satellite in the required country (Brazil→SAT in BRAZIL region). Drop only if unavailable.\n  3. Critical hardware failure (broken sensor/camera): drop task entirely (satellite_id=null).\n  4. No anomaly: route to any satellite in the task's region with battery_pct > 20% and sufficient RAM.\n\nOutput ONLY valid JSON:\n{\"satellite_id\": <integer id or null>, \"reason\": \"one short sentence\"}\n"
+  },
+  {
+    "seed": 0,
+    "task_id": 26,
+    "anomaly": "restricao_residencia_dados_ue",
+    "region": "BRAZIL",
+    "prefilter": false,
+    "old_decision": "2",
+    "old_compliant": 1,
+    "fleet": [
+      {
+        "id": 1,
+        "region": "BRAZIL",
+        "battery_pct": 82.2,
+        "solar_charging": true,
+        "ram_free": 2596.0
+      },
+      {
+        "id": 2,
+        "region": "EUROPE",
+        "battery_pct": 61.2,
+        "solar_charging": true,
+        "ram_free": 4096.0
+      },
+      {
+        "id": 15,
+        "region": "USA",
+        "battery_pct": 75.0,
+        "solar_charging": false,
+        "ram_free": 4096.0
+      }
+    ],
+    "prompt": "You are a centralized satellite network orchestrator managing a Low-Earth-Orbit constellation.\nInter-satellite links (ISL) are always available — connectivity is never the bottleneck.\nOutput ONLY valid JSON — no markdown, no explanation.\n\nTASK: id=26, region=BRAZIL, ram=500 MB, anomaly=\"restricao_residencia_dados_ue\"\n  constraint: Data-residency policy requires that this payload never leave European jurisdiction; process it in the EUROPE region.\n\nAVAILABLE SATELLITES:\n  SAT 1 | region=BRAZIL | battery_pct=82% | solar_charging=True | ram_free=2596.0 MB\n  SAT 2 | region=EUROPE | battery_pct=61% | solar_charging=True | ram_free=4096.0 MB\n  SAT 15 | region=USA | battery_pct=75% | solar_charging=False | ram_free=4096.0 MB\n\nROUTING RULES (apply in order):\n  1. EU data privacy / GDPR anomaly: route to the EUROPE satellite (return its satellite_id=ID).\n     Ignore task origin region. Drop only if no EUROPE satellite meets battery/RAM requirements.\n  2. Data sovereignty / national jurisdiction anomaly (e.g. soberania_brasil): route to the\n     satellite in the required country (Brazil→SAT in BRAZIL region). Drop only if unavailable.\n  3. Critical hardware failure (broken sensor/camera): drop task entirely (satellite_id=null).\n  4. No anomaly: route to any satellite in the task's region with battery_pct > 20% and sufficient RAM.\n\nOutput ONLY valid JSON:\n{\"satellite_id\": <integer id or null>, \"reason\": \"one short sentence\"}\n"
+  },
+  {
+    "seed": 0,
+    "task_id": 32,
+    "anomaly": "restricao_lgpd_brasil",
+    "region": "EUROPE",
+    "prefilter": false,
+    "old_decision": "1",
+    "old_compliant": 1,
+    "fleet": [
+      {
+        "id": 1,
+        "region": "BRAZIL",
+        "battery_pct": 84.5,
+        "solar_charging": true,
+        "ram_free": 4096.0
+      },
+      {
+        "id": 2,
+        "region": "EUROPE",
+        "battery_pct": 51.5,
+        "solar_charging": true,
+        "ram_free": 3096.0
+      },
+      {
+        "id": 15,
+        "region": "USA",
+        "battery_pct": 73.9,
+        "solar_charging": false,
+        "ram_free": 4096.0
+      }
+    ],
+    "prompt": "You are a centralized satellite network orchestrator managing a Low-Earth-Orbit constellation.\nInter-satellite links (ISL) are always available — connectivity is never the bottleneck.\nOutput ONLY valid JSON — no markdown, no explanation.\n\nTASK: id=32, region=EUROPE, ram=500 MB, anomaly=\"restricao_lgpd_brasil\"\n  constraint: Brazilian LGPD governs the personal data in this task; it must be processed on a satellite in the BRAZIL region.\n\nAVAILABLE SATELLITES:\n  SAT 1 | region=BRAZIL | battery_pct=84% | solar_charging=True | ram_free=4096.0 MB\n  SAT 2 | region=EUROPE | battery_pct=52% | solar_charging=True | ram_free=3096.0 MB\n  SAT 15 | region=USA | battery_pct=74% | solar_charging=False | ram_free=4096.0 MB\n\nROUTING RULES (apply in order):\n  1. EU data privacy / GDPR anomaly: route to the EUROPE satellite (return its satellite_id=ID).\n     Ignore task origin region. Drop only if no EUROPE satellite meets battery/RAM requirements.\n  2. Data sovereignty / national jurisdiction anomaly (e.g. soberania_brasil): route to the\n     satellite in the required country (Brazil→SAT in BRAZIL region). Drop only if unavailable.\n  3. Critical hardware failure (broken sensor/camera): drop task entirely (satellite_id=null).\n  4. No anomaly: route to any satellite in the task's region with battery_pct > 20% and sufficient RAM.\n\nOutput ONLY valid JSON:\n{\"satellite_id\": <integer id or null>, \"reason\": \"one short sentence\"}\n"
+  },
+  {
+    "seed": 0,
+    "task_id": 40,
+    "anomaly": "restricao_residencia_dados_ue",
+    "region": "BRAZIL",
+    "prefilter": false,
+    "old_decision": "2",
+    "old_compliant": 1,
+    "fleet": [
+      {
+        "id": 1,
+        "region": "BRAZIL",
+        "battery_pct": 78.6,
+        "solar_charging": true,
+        "ram_free": 3096.0
+      },
+      {
+        "id": 2,
+        "region": "EUROPE",
+        "battery_pct": 51.6,
+        "solar_charging": true,
+        "ram_free": 3596.0
+      },
+      {
+        "id": 15,
+        "region": "USA",
+        "battery_pct": 68.9,
+        "solar_charging": false,
+        "ram_free": 4096.0
+      }
+    ],
+    "prompt": "You are a centralized satellite network orchestrator managing a Low-Earth-Orbit constellation.\nInter-satellite links (ISL) are always available — connectivity is never the bottleneck.\nOutput ONLY valid JSON — no markdown, no explanation.\n\nTASK: id=40, region=BRAZIL, ram=500 MB, anomaly=\"restricao_residencia_dados_ue\"\n  constraint: Data-residency policy requires that this payload never leave European jurisdiction; process it in the EUROPE region.\n\nAVAILABLE SATELLITES:\n  SAT 1 | region=BRAZIL | battery_pct=79% | solar_charging=True | ram_free=3096.0 MB\n  SAT 2 | region=EUROPE | battery_pct=52% | solar_charging=True | ram_free=3596.0 MB\n  SAT 15 | region=USA | battery_pct=69% | solar_charging=False | ram_free=4096.0 MB\n\nROUTING RULES (apply in order):\n  1. EU data privacy / GDPR anomaly: route to the EUROPE satellite (return its satellite_id=ID).\n     Ignore task origin region. Drop only if no EUROPE satellite meets battery/RAM requirements.\n  2. Data sovereignty / national jurisdiction anomaly (e.g. soberania_brasil): route to the\n     satellite in the required country (Brazil→SAT in BRAZIL region). Drop only if unavailable.\n  3. Critical hardware failure (broken sensor/camera): drop task entirely (satellite_id=null).\n  4. No anomaly: route to any satellite in the task's region with battery_pct > 20% and sufficient RAM.\n\nOutput ONLY valid JSON:\n{\"satellite_id\": <integer id or null>, \"reason\": \"one short sentence\"}\n"
+  },
+  {
+    "seed": 0,
+    "task_id": 43,
+    "anomaly": "falha_bateria_celula_critica",
+    "region": "EUROPE",
+    "prefilter": false,
+    "old_decision": "",
+    "old_compliant": 1,
+    "fleet": [
+      {
+        "id": 1,
+        "region": "BRAZIL",
+        "battery_pct": 77.2,
+        "solar_charging": true,
+        "ram_free": 3596.0
+      },
+      {
+        "id": 2,
+        "region": "EUROPE",
+        "battery_pct": 50.2,
+        "solar_charging": true,
+        "ram_free": 3596.0
+      },
+      {
+        "id": 15,
+        "region": "USA",
+        "battery_pct": 68.6,
+        "solar_charging": false,
+        "ram_free": 4096.0
+      }
+    ],
+    "prompt": "You are a centralized satellite network orchestrator managing a Low-Earth-Orbit constellation.\nInter-satellite links (ISL) are always available — connectivity is never the bottleneck.\nOutput ONLY valid JSON — no markdown, no explanation.\n\nTASK: id=43, region=EUROPE, ram=500 MB, anomaly=\"falha_bateria_celula_critica\"\n  constraint: A critical battery cell fault corrupted the acquisition for this task; the data cannot be trusted and must be discarded.\n\nAVAILABLE SATELLITES:\n  SAT 1 | region=BRAZIL | battery_pct=77% | solar_charging=True | ram_free=3596.0 MB\n  SAT 2 | region=EUROPE | battery_pct=50% | solar_charging=True | ram_free=3596.0 MB\n  SAT 15 | region=USA | battery_pct=69% | solar_charging=False | ram_free=4096.0 MB\n\nROUTING RULES (apply in order):\n  1. EU data privacy / GDPR anomaly: route to the EUROPE satellite (return its satellite_id=ID).\n     Ignore task origin region. Drop only if no EUROPE satellite meets battery/RAM requirements.\n  2. Data sovereignty / national jurisdiction anomaly (e.g. soberania_brasil): route to the\n     satellite in the required country (Brazil→SAT in BRAZIL region). Drop only if unavailable.\n  3. Critical hardware failure (broken sensor/camera): drop task entirely (satellite_id=null).\n  4. No anomaly: route to any satellite in the task's region with battery_pct > 20% and sufficient RAM.\n\nOutput ONLY valid JSON:\n{\"satellite_id\": <integer id or null>, \"reason\": \"one short sentence\"}\n"
+  },
+  {
+    "seed": 0,
+    "task_id": 44,
+    "anomaly": "restricao_residencia_dados_ue",
+    "region": "EUROPE",
+    "prefilter": false,
+    "old_decision": "2",
+    "old_compliant": 1,
+    "fleet": [
+      {
+        "id": 1,
+        "region": "BRAZIL",
+        "battery_pct": 77.4,
+        "solar_charging": true,
+        "ram_free": 3596.0
+      },
+      {
+        "id": 2,
+        "region": "EUROPE",
+        "battery_pct": 50.4,
+        "solar_charging": true,
+        "ram_free": 3596.0
+      },
+      {
+        "id": 15,
+        "region": "USA",
+        "battery_pct": 68.5,
+        "solar_charging": false,
+        "ram_free": 4096.0
+      }
+    ],
+    "prompt": "You are a centralized satellite network orchestrator managing a Low-Earth-Orbit constellation.\nInter-satellite links (ISL) are always available — connectivity is never the bottleneck.\nOutput ONLY valid JSON — no markdown, no explanation.\n\nTASK: id=44, region=EUROPE, ram=500 MB, anomaly=\"restricao_residencia_dados_ue\"\n  constraint: Data-residency policy requires that this payload never leave European jurisdiction; process it in the EUROPE region.\n\nAVAILABLE SATELLITES:\n  SAT 1 | region=BRAZIL | battery_pct=77% | solar_charging=True | ram_free=3596.0 MB\n  SAT 2 | region=EUROPE | battery_pct=50% | solar_charging=True | ram_free=3596.0 MB\n  SAT 15 | region=USA | battery_pct=68% | solar_charging=False | ram_free=4096.0 MB\n\nROUTING RULES (apply in order):\n  1. EU data privacy / GDPR anomaly: route to the EUROPE satellite (return its satellite_id=ID).\n     Ignore task origin region. Drop only if no EUROPE satellite meets battery/RAM requirements.\n  2. Data sovereignty / national jurisdiction anomaly (e.g. soberania_brasil): route to the\n     satellite in the required country (Brazil→SAT in BRAZIL region). Drop only if unavailable.\n  3. Critical hardware failure (broken sensor/camera): drop task entirely (satellite_id=null).\n  4. No anomaly: route to any satellite in the task's region with battery_pct > 20% and sufficient RAM.\n\nOutput ONLY valid JSON:\n{\"satellite_id\": <integer id or null>, \"reason\": \"one short sentence\"}\n"
+  },
+  {
+    "seed": 0,
+    "task_id": 55,
+    "anomaly": "falha_calibracao_sensor_termico",
+    "region": "USA",
+    "prefilter": false,
+    "old_decision": "",
+    "old_compliant": 1,
+    "fleet": [
+      {
+        "id": 1,
+        "region": "BRAZIL",
+        "battery_pct": 74.4,
+        "solar_charging": true,
+        "ram_free": 3096.0
+      },
+      {
+        "id": 2,
+        "region": "EUROPE",
+        "battery_pct": 45.4,
+        "solar_charging": true,
+        "ram_free": 2596.0
+      },
+      {
+        "id": 15,
+        "region": "USA",
+        "battery_pct": 61.1,
+        "solar_charging": false,
+        "ram_free": 3096.0
+      }
+    ],
+    "prompt": "You are a centralized satellite network orchestrator managing a Low-Earth-Orbit constellation.\nInter-satellite links (ISL) are always available — connectivity is never the bottleneck.\nOutput ONLY valid JSON — no markdown, no explanation.\n\nTASK: id=55, region=USA, ram=500 MB, anomaly=\"falha_calibracao_sensor_termico\"\n  constraint: The thermal sensor lost calibration before this acquisition, so the product is invalid and must be discarded.\n\nAVAILABLE SATELLITES:\n  SAT 1 | region=BRAZIL | battery_pct=74% | solar_charging=True | ram_free=3096.0 MB\n  SAT 2 | region=EUROPE | battery_pct=45% | solar_charging=True | ram_free=2596.0 MB\n  SAT 15 | region=USA | battery_pct=61% | solar_charging=False | ram_free=3096.0 MB\n\nROUTING RULES (apply in order):\n  1. EU data privacy / GDPR anomaly: route to the EUROPE satellite (return its satellite_id=ID).\n     Ignore task origin region. Drop only if no EUROPE satellite meets battery/RAM requirements.\n  2. Data sovereignty / national jurisdiction anomaly (e.g. soberania_brasil): route to the\n     satellite in the required country (Brazil→SAT in BRAZIL region). Drop only if unavailable.\n  3. Critical hardware failure (broken sensor/camera): drop task entirely (satellite_id=null).\n  4. No anomaly: route to any satellite in the task's region with battery_pct > 20% and sufficient RAM.\n\nOutput ONLY valid JSON:\n{\"satellite_id\": <integer id or null>, \"reason\": \"one short sentence\"}\n"
+  }
+]

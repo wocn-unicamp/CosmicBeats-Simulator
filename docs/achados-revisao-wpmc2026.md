@@ -1052,6 +1052,56 @@ alvo mandasse" é contrafactual e foi calculada com a frota do prompt, em que a 
 arredondada a inteiro; nenhuma bateria estava a menos de 1 ponto do piso de 20% nesses
 casos com regra.
 
+#### IX.9.4 O "20/20" do LLM no camera-ready se sustenta: replay direcionado (24/09)
+
+**A pergunta.** O camera-ready afirma que o LLM mantém 20/20 nas regras inéditas,
+nas sementes 0–2 da execução antiga (`logs/generalization/heldout_lm`). Essa execução
+não gravava `decision_source`. Uma falha de API vira DROP, e numa regra de descarte o DROP
+é conforme por acidente (IX.8). A campanha completa v2 não tinha como responder a
+tempo: a API do `gemini-3.1-flash-lite` estava em 503 em ~92% das chamadas (1 sucesso em 12
+na amostra das 14h43). Nenhum outro nome de modelo aponta para o mesmo snapshot
+(`3.1-flash-lite-05-2026`), então trocar de modelo estava fora de questão.
+
+**Método** (`scripts/replay_llm_rule_tasks.py`, a mesma técnica da IX.9.3):
+1. **Reprodução, sem API.** O simulador roda com um LLM de reprodução que devolve as
+   decisões gravadas no CSV antigo. O CSV gerado bateu tarefa a tarefa com o gravado nas
+   três sementes (69, 58 e 71 tarefas). Logo, a frota em cada uma das 20 tarefas com regra
+   é a que o modelo viu. Nenhuma delas cai no pré-filtro do LLM, então todas foram, de
+   fato, enviadas à API na execução antiga.
+2. **Sondagem.** Cada um dos 20 prompts foi reenviado com a configuração do
+   `llm_scheduler.py` (temperatura 0, JSON, 128 tokens), insistindo até obter HTTP 200.
+   Foram 76 tentativas no total. A resposta foi pontuada com a mesma função do simulador
+   (`semantic_rules.is_compliant`), com o `satellite_id` exatamente como o modelo o
+   devolveu. O prompt e a configuração não mudaram desde a execução antiga: entre
+   `55b5bec` e o HEAD, o `llm_scheduler.py` só mudou nas retentativas e no
+   `decision_source`.
+
+**Argumento lógico antes da sondagem.** Das 20 decisões conformes, 15 são roteamentos
+para um satélite. Uma falha de API só produz DROP, então essas 15 são necessariamente
+decisões do modelo. Só as 5 de falha de hardware, que terminaram em DROP, eram ambíguas.
+A sondagem testou essas 5 primeiro.
+
+**Resultado.**
+
+| tarefas | origem | conformes | mesma decisão da execução antiga |
+|---|---|---|---|
+| 5 de falha de hardware (as ambíguas) | modelo, 5/5 | 5/5 (o modelo escolhe descartar) | 5/5 |
+| 15 de região (conferência) | modelo, 15/15 | 15/15 | 15/15 |
+| **total** | **20/20** | **20/20** | **20/20** |
+
+**Conclusão: a frase "o LLM mantém 20/20" do camera-ready se sustenta, e o camera-ready
+não precisa de nenhuma mudança por causa dela.** Diante do prompt exato, o modelo toma
+a decisão conforme nas 20 tarefas, e a mesma decisão da execução antiga.
+
+**Limite.** A replicação mostra o que o modelo decide diante daquele prompt. Ela não
+prova diretamente que nenhum dos 5 DROPs antigos coincidiu com uma falha de API. Com
+temperatura 0, o mesmo prompt e 20/20 decisões idênticas, essa é a leitura mais forte que
+os dados permitem. A campanha v2 completa continua necessária para a versão estendida
+(sementes 3–9) e segue vigiada por `scripts/wait_and_run_llm.sh`.
+
+Dados: `logs/diagnostics/llm_rule_replay/` (prompts e frota por tarefa, reprodução,
+`probe_results.json`, `probe.log`).
+
 ### IX.10 Estado ao encerrar a sessão de 23/09 e como retomar
 
 > **ESTADO AO DESLIGAR O COMPUTADOR — 23/09/2026, 19h. Comece por aqui.**
@@ -1091,8 +1141,9 @@ casos com regra.
 > **Atualização de 24/09:** o LLM está sendo vigiado por `scripts/wait_and_run_llm.sh`
 > (versionado; sobrevive a desligar a máquina). O item 3 abaixo foi **feito**: veja a IX.9.3.
 > Ele gerou uma mudança no camera-ready, na frase "discard reflex" do SLM, **já
-> aplicada** (IX.9.3). A única pendência do camera-ready agora é a frase "o LLM mantém 20/20",
-> que depende da semente 2 do LLM.
+> aplicada** (IX.9.3). A frase "o LLM mantém 20/20" foi **confirmada** pelo replay
+> direcionado (IX.9.4). **O camera-ready não tem mais pendência de dados.** A campanha
+> completa do LLM agora só interessa à versão estendida.
 >
 > **3. ~~Pendência aberta: o teste do `finishReason` do SLM.~~ Feito (IX.9.3).** Registrar o `finishReason` da
 > API no `slm_scheduler.py` e reexecutar só as 13 tarefas com `parse_failure`, para testar se

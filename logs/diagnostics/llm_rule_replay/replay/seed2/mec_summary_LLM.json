@@ -1,0 +1,21 @@
+{
+  "engine": "LLM",
+  "total_tasks": 71,
+  "success_count": 66,
+  "success_rate": 0.9296,
+  "drop_count": 5,
+  "drop_rate": 0.0704,
+  "avg_latency_ms": 3.674,
+  "total_joules": 355.0,
+  "joules_per_decision": 5.0,
+  "anomaly_task_count": 8,
+  "semantic_compliance_rate": 1.0,
+  "anomaly_compliance_rate": 1.0,
+  "effective_success_count": 66,
+  "effective_success_rate": 0.9296,
+  "correct_drop_count": 5,
+  "avg_ram_utilization_pct": 13.0,
+  "sat_1_final_battery_pct": 67.9,
+  "sat_2_final_battery_pct": 49.8,
+  "sat_15_final_battery_pct": 25.4
+}
