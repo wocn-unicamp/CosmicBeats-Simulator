@@ -1104,6 +1104,59 @@ Dados: `logs/diagnostics/llm_rule_replay/` (prompts e frota por tarefa, reprodu�
 
 ### IX.10 Estado ao encerrar a sessão de 23/09 e como retomar
 
+> **ESTADO EM 24/09/2026, 16h30. COMECE POR AQUI (o bloco das 19h de 23/09, mais abaixo, é histórico).**
+>
+> **Camera-ready: pronto do lado dos dados e do texto.**
+> - Branch `camera-ready/wpmc2026-reviewer-response`, último commit `53b9564`. O PDF está em
+>   `paper/revised-camera-ready.pdf`: 6 páginas, verificador 58/58.
+> - Conformidade técnica conferida (`pdfinfo`, `pdffonts`, `pdfimages`): fontes todas
+>   Type 1 embutidas, nenhuma Type 3; tamanho Letter; PDF 1.7; sem criptografia; sem número
+>   de página nem cabeçalho impressos; figura sem canal alfa (removido em `53b9564`, com
+>   pixels idênticos).
+> - Mudanças de 24/09: a frase "discard reflex" do SLM foi trocada (IX.9.3); o "20/20" do
+>   LLM foi confirmado por replay direcionado (IX.9.4).
+> - As três revisões foram relidas ponto a ponto contra o texto, e todo pedido tem
+>   resposta. Há duas respostas parciais, declaradas como tal: a energia continua modelo
+>   (a medição por RAPL fica para a estendida), e o γ>0 do R3 é só argumentado (o dado da
+>   IX.9.1 existe, mas é resultado novo; entra ou não entra por decisão do autor e do
+>   orientador).
+>
+> **Checklist de submissão, a cargo do autor (exige o login dele; o eCF é assinatura legal):**
+> 1. O autor e o orientador revisam o PDF e decidem sobre a frase do γ>0.
+> 2. Conferir no author kit do WPMC 2026 se o aviso de copyright do IEEE vai no rodapé da
+>    página 1. Se for, pedir a inclusão (`\IEEEoverridecommandlockouts` + `\IEEEpubid`).
+> 3. IEEE PDF eXpress: conta com o Conference ID do WPMC 2026, envio do PDF, download do
+>    PDF validado. Se houver erro, trazer o relatório.
+> 4. EDAS: enviar **exatamente** o PDF gerado pelo PDF eXpress; conferir se título e
+>    autores no EDAS batem letra a letra com o PDF.
+> 5. EDAS: eCF (IEEE Copyright Form).
+> 6. Inscrição "Author – Symposium Papers" até **30/09/2026**.
+>
+> **Rodando (notebook na tomada):** o vigia `scripts/wait_and_run_llm.sh` (PID 7457)
+> disparou a campanha do LLM v2 às 15h23, e a semente 2 está em andamento. A API oscila: às
+> 16h30, 50% de sucesso (às 14h43, era 8%). **Quando a semente 2 terminar, conferir
+> quantas decisões saíram como `api_failure`.** Se forem mais que ~5% das tarefas, apagar
+> a pasta da semente e rodá-la de novo com a API estável, porque decisões perdidas mudam a
+> trajetória da frota. O critério de disparo do vigia (dois 200 seguidos) se mostrou fraco
+> com a API oscilando; para a próxima vez, exigir uma taxa mínima de sucesso numa amostra.
+> Log: `~/cosmicbeats-llm-v2.log`. Se desligar a máquina: a semente em curso se perde, as
+> concluídas ficam, e basta relançar o vigia (comando no cabeçalho do script).
+>
+> **Versão estendida, pendências em ordem:**
+> 1. Terminar o LLM v2 (sementes 2–9) e montar a tabela pareada dos seis motores nas regras
+>    inéditas, em duas leituras (operacional e só decisões do modelo).
+> 2. **Decidir com o orientador antes de qualquer nova campanha do SLM (IX.9.3):** mesma
+>    interface de saída para SLM e LLM, orçamento de tokens que não corte o raciocínio, e
+>    fechar a leniência do parser que lê o texto de raciocínio.
+> 3. Fixar w = 0,05 (o único que replica em 3/3 sementes, IX.9.1); treinar os agentes
+>    sequenciais também em λ=8.
+> 4. Ampliar o corpus de regras inéditas (6 é pouco), mantendo 1/3 de regras de descarte.
+> 5. Energia medida por RAPL (exige sudo; baixa prioridade).
+>
+> **Para a reunião de sexta:** IX.9.1 (γ>0: só w=0,05 replica), IX.9.3 (a falha do SLM é o
+> orçamento de tokens, e há assimetria de interface), IX.9.4 (20/20 confirmado), a
+> checklist acima e a decisão sobre a frase do γ>0 no camera-ready.
+
 > **ESTADO AO DESLIGAR O COMPUTADOR — 23/09/2026, 19h. Comece por aqui.**
 >
 > **Nada está rodando.** As campanhas foram paradas de propósito para desligar a máquina.
