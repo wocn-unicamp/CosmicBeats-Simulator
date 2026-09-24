@@ -968,6 +968,86 @@ requisição trivial; a semente 1 levou 6.986 s), por isso a campanha foi reinic
 mantém 20/20", sementes 0–2) é sobre decisões do modelo. Até aqui ela se sustenta nessa
 leitura; a semente 2 decide.
 
+#### IX.9.3 Por que o SLM falha: orçamento de tokens, confirmado (24/09)
+
+**Método.** Para testar a hipótese da IX.9.2, cada falha foi repetida com o prompt
+**exato** que o modelo recebeu (`scripts/replay_slm_failures.py`). O prompt inclui o
+estado da frota, que depende de todas as decisões anteriores, então o script tem duas fases:
+
+1. **Reprodução, sem API.** Um SLM de reprodução devolve as decisões gravadas no CSV da
+   campanha, com a mesma temporização assíncrona. O CSV gerado bateu tarefa a tarefa com
+   o gravado nas 8 sementes que tinham falhas (colunas conferidas: tarefa, instante,
+   região, anomalia, satélite, sucesso, conformidade, origem da decisão). Logo, a frota em
+   cada falha é a mesma que o modelo viu. Os 13 prompts estão em
+   `logs/diagnostics/slm_parse_failures/prompts_seed*.json`.
+2. **Sondagem, com API.** Cada prompt foi reenviado com a configuração original
+   (temperatura 0, `maxOutputTokens = 1024`) e com 4.096, gravando `finishReason` e o uso
+   de tokens (`probe_results.json`).
+
+**Resultado.**
+
+| orçamento | `finishReason` | resposta aproveitável |
+|---|---|---|
+| 1.024 (o da campanha) | **MAX_TOKENS em 13/13**, sempre com 1.021 tokens de raciocínio | 0/13 |
+| 4.096 | STOP em 11/13; MAX_TOKENS em 2/13 | 11/13 |
+
+**A hipótese se confirma.** Nas regras de região, a Gemma gasta todo o orçamento
+raciocinando e não chega a escrever a resposta. Com 4.096 tokens, as que terminam usam
+entre 1.399 e 4.018 tokens de raciocínio. A falha também é reproduzível: com temperatura 0,
+os 13 prompts falharam de novo, do mesmo jeito.
+
+**Achado secundário 1: o parser lê o raciocínio.** Nos 2 casos que estouram até 4.096,
+o parser devolve uma ação mesmo assim. Quando não há parte final, o
+`slm_scheduler.py` concatena o texto do raciocínio, e o regex acha um `"action"` escrito
+no meio dele. Esses casos foram contados como falha aqui. Na campanha, com 1.024, isso
+não aconteceu (as 13 falharam no parse), mas a leniência existe e precisa ser fechada
+antes de qualquer nova campanha do SLM.
+
+**Achado secundário 2: respostas contraditórias e assimetria de interface.** Das 11
+respostas completas, 5 dizem `action = process` com `target_region` apontando para
+**outra** região. O prompt define `process` como processar na região da própria tarefa,
+então a resposta se contradiz. O `_resolve_action` do SLM obedece à ação e ignora o alvo.
+Conformidade das 12 tarefas com regra, com 4.096 tokens:
+
+| leitura | conformes |
+|---|---|
+| como o código resolve hoje (a ação manda) | 6/12 |
+| se o alvo mandasse | 11/12 |
+
+Isso **não** autoriza trocar a regra agora: escolher o resolvedor depois de ver o resultado
+seria ajustar o método ao dado. Mas expõe uma assimetria entre os motores remotos. O
+LLM responde direto com `satellite_id`; o SLM responde com ação + região, que o código
+traduz em satélite. Um erro de rótulo só pode prejudicar o SLM. O orçamento também é
+diferente: 1.024 tokens no SLM, com raciocínio, e 128 no LLM, sem raciocínio.
+
+**Consequência para o artigo e para a versão estendida.**
+- O desempenho do SLM nas regras de região (16/42, IX.9.2b) mede **a configuração**,
+  e não só o modelo: parte dos erros vem do orçamento de tokens, e parte da interface
+  de saída. Isso refina de novo a IX.5: o "reflexo de descarte" era, em boa parte,
+  resposta cortada.
+- Para a versão estendida, a comparação justa pede **a mesma interface de saída** para
+  os dois modelos (ambos com `satellite_id`, ou ambos com ação + região) e um orçamento
+  que não corte o raciocínio, **fixados antes** de uma nova campanha e aplicados aos dois.
+  Decisão a tomar com o orientador.
+- **O camera-ready é afetado (conferido em 24/09).** A Tabela IV traz SLM = 50% nas
+  regras inéditas (sementes 0–2), e o texto interpreta esse número como "a discard
+  reflex rather than rule reading", na discussão da tabela e de novo na conclusão
+  ("the SLM fell back on a discard reflex"). **Os números continuam corretos; a
+  interpretação não se sustenta mais inteira.** Nas sementes 0–2 da campanha v2 (mesmas
+  tarefas; o SLM acerta 6/15 regras de região, contra 5/15 no registro do artigo),
+  3 dos 9 erros são respostas cortadas pelo orçamento de tokens (IX.9.2), não
+  escolhas de descarte. Nas 10 sementes são 12 de 26 erros em regras de região. Proposta para o camera-ready, a confirmar com o autor e sem
+  mudar o número de páginas: trocar "discard reflex" por uma frase que atribua o
+  resultado à configuração. Por exemplo: "with a 1,024-token output budget the SLM
+  often exhausts it reasoning about region constraints, so this figure reflects the
+  configuration as much as the model." A mudança entra pela worktree da branch do
+  camera-ready, e o verificador de números precisa continuar 58/58.
+
+**Limites.** São 13 tarefas e uma sondagem por orçamento. A conformidade na leitura "se o
+alvo mandasse" é contrafactual e foi calculada com a frota do prompt, em que a bateria está
+arredondada a inteiro; nenhuma bateria estava a menos de 1 ponto do piso de 20% nesses
+casos com regra.
+
 ### IX.10 Estado ao encerrar a sessão de 23/09 e como retomar
 
 > **ESTADO AO DESLIGAR O COMPUTADOR — 23/09/2026, 19h. Comece por aqui.**
@@ -1004,7 +1084,12 @@ leitura; a semente 2 decide.
 > `decision_source = model`. Até aqui: 11/11 conformes (IX.9.2b). Se a semente 2 não sair a
 > tempo, suavizar a frase por precaução.
 >
-> **3. Pendência aberta: o teste do `finishReason` do SLM.** Registrar o `finishReason` da
+> **Atualização de 24/09:** o LLM está sendo vigiado por `scripts/wait_and_run_llm.sh`
+> (versionado; sobrevive a desligar a máquina). O item 3 abaixo foi **feito**: veja a IX.9.3.
+> Ele gerou uma pendência nova para o camera-ready, a frase "discard reflex" do SLM, que
+> depende da decisão do autor.
+>
+> **3. ~~Pendência aberta: o teste do `finishReason` do SLM.~~ Feito (IX.9.3).** Registrar o `finishReason` da
 > API no `slm_scheduler.py` e reexecutar só as 13 tarefas com `parse_failure`, para testar se
 > o `maxOutputTokens = 1024` corta a resposta nas regras de região. **Fazer só com a
 > campanha do LLM parada ou concluída**, e conferir antes se o `main.py` importa o módulo do
