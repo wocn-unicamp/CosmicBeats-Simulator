@@ -129,8 +129,8 @@ inference (Gemma~4 26B, \SI{50}{\milli\second} benchmark latency), and
 against 25\% for the heuristic ($p=0.031$, exact paired McNemar). A rule table,
 or a DRL agent given the rule type, matches it on these design-time rules; the
 difference emerges on unseen constraints stated in natural language, where the
-LLM keeps 20/20 while the rule table collapses to the heuristic and the SLM to a
-discard reflex. Decision energy, under a declared model, is orders of magnitude
+LLM keeps 20/20 while the rule table collapses to the heuristic and the SLM,
+limited by its output-token budget, to 50\%. Decision energy, under a declared model, is orders of magnitude
 higher for the LLM yet negligible against the battery budget: the operative cost
 of semantic compliance is latency and dependence on a ground link.
 \end{abstract}
@@ -212,7 +212,7 @@ throughput alone. This paper fills that gap with the following contributions:
   \item An information-parity evaluation: a rule table and a DRL agent given
     the rule type match the LLM on design-time constraints, but on unseen
     natural-language constraints only the LLM retains full compliance, while the
-    SLM behaves as a discard reflex. All contrasts are reported with paired
+    SLM is limited by its output-token budget. All contrasts are reported with paired
     tests and interval estimates.
   \item An explicit \emph{parameter provenance audit} (Table~\ref{tab:params}):
     every simulation parameter is labelled either as grounded in cited
@@ -823,12 +823,13 @@ picture inverts. ORACLE takes exactly the same decision as BASELINE on every tas
 obligation. Only the LLM remains at full compliance (20/20; McNemar against
 BASELINE 14/0, $p=0.0001$). DRL-OH returns to heuristic level (35.0\%; 3/2
 discordant pairs, $p=1.000$): with its rule-type vector zeroed it has nothing to
-act on. The SLM reaches 50\%, but decomposing by obligation shows a discard
-reflex rather than rule reading: it discards all five fault tasks, yet on the
+act on. The SLM reaches 50\%: it discards all five fault tasks, yet on the
 fifteen that require routing to a specific region it solves 5, against the
-heuristic's 6 and the LLM's 15. The distinction
-that matters is therefore which language model, not language model versus
-numerical optimiser.
+heuristic's 6 and the LLM's 15. Instrumented re-runs trace a third to a half of
+its region errors to answers truncated by its 1,024-token output budget, so this
+figure reflects the configuration as much as the model. The distinction
+that matters is therefore which language model and configuration, not language
+model versus numerical optimiser.
 
 \section{Conclusion}
 \label{sec:conclusion}
@@ -841,7 +842,7 @@ constraint (8/8, $p=0.031$ against the heuristic), but so do a hand-coded rule
 table and a DRL agent given the rule type. What separates the LLM is
 generalisation: on unseen natural-language constraints it stayed at 20/20, while
 the rule table and the informed DRL agent reverted to heuristic level and the
-SLM fell back on a discard reflex.
+SLM was limited by its output-token budget.
 
 Three trade-offs define where each paradigm fits:
 (1)~\emph{Enumerated vs.\ open-ended constraints}: when every rule is known at
