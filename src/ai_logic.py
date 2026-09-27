@@ -211,6 +211,10 @@ class MECOrchestrator:
             # Motores locais sao sempre "model". Separa falha de infraestrutura de
             # escolha do modelo — antes as duas viravam o mesmo DROP.
             "decision_source":    task.get("decision_source", "model"),
+            # So para motores de API: por que o modelo parou (STOP, MAX_TOKENS...)
+            # e quantos tokens gastou raciocinando. Vazio nos motores locais.
+            "finish_reason":      task.get("finish_reason", ""),
+            "thought_tokens":     task.get("thought_tokens", ""),
         })
 
     # ------------------------------------------------------------------ #
@@ -358,6 +362,7 @@ class MECOrchestrator:
             "joules_cost", "decision_sat_id",
             "success", "semantic_compliant", "engine",
             "decision_source",   # no fim, para nao deslocar as colunas existentes
+            "finish_reason", "thought_tokens",
         ]
         with open(csv_path, 'w', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)

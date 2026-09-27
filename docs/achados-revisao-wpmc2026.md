@@ -1267,6 +1267,86 @@ submissão (6 páginas, verificador 58/58, PDF em `paper/revised-camera-ready.pd
 
 ---
 
+## Parte X — Camera-ready final com o aval do orientador (27/09/2026)
+
+### X.1 As seis decisões do orientador
+
+| # | Decisão | Resultado |
+|---|---|---|
+| 1 | Resultado de γ>0 no artigo | incluir, como preliminar |
+| 2 | Tese "o LLM generaliza para regras inéditas" | aprovada |
+| 3 | Mesma interface para SLM e LLM | aprovada; o SLM roda de novo e o resultado pode mudar |
+| 4 | Fixar w = 0,05 | seguir: reportar só o único peso que se repete em 3/3 treinos |
+| 5 | Ampliar o corpus de regras inéditas | rejeitada; entra só uma frase de limitação sobre conhecimento prévio do LLM (HIPAA, ITAR e LGPD são públicas) |
+| 6 | Medir energia com RAPL | não seguir |
+
+O autor escolheu também: o SLM usa o prompt do LLM, idêntico; meta de 10 sementes nas regras
+inéditas, com a regra de corte da X.3.
+
+### X.2 Protocolo v3 do SLM — fixado ANTES de rodar
+
+O que muda em relação ao protocolo v1 (o do artigo submetido):
+
+| | v1 (até 27/09) | v3 |
+|---|---|---|
+| Prompt | template próprio ("embedded satellite"), regras redigidas de outro jeito | **o mesmo do LLM**, via `llm_scheduler.build_prompt` |
+| Formato da resposta | ação + região, traduzida pelo `_resolve_action` | **`satellite_id`**, devolvido como o modelo deu (igual ao LLM) |
+| Leitura | JSON; se falhasse, reconstrução a partir do texto do raciocínio | **`llm_scheduler.parse_answer`**, a mesma função do LLM, só sobre a resposta final; o raciocínio nunca vira decisão |
+| Modo JSON | não | sim (`responseMimeType`), como o LLM |
+| Orçamento de saída | 1.024 tokens | 8.192 tokens (1.024 cortou 13/13; 4.096 cortou 2/13, IX.9.3) |
+| Retentativa em falha de parse | até 6 vezes | nenhuma, como o LLM |
+| Registro | — | `finish_reason` e `thought_tokens` no CSV (o LLM também passa a registrar) |
+
+O que fica igual: a fila assíncrona de 50 ms da NPU, o limitador de 14 RPM, a temperatura 0 e
+as retentativas em HTTP transitório.
+
+**Assimetrias que ficam, declaradas:** o pré-filtro do LLM (1 decisão em 666 no v2); o
+orçamento (8.192 contra 128 do LLM, porque só a Gemma raciocina); o timeout de requisição
+(120 s contra 60 s, pelo mesmo motivo).
+
+**Testes antes da campanha, todos sem API:**
+- a corrida canônica de BASELINE e DRL continua idêntica tarefa a tarefa;
+- `validate_seq_env` segue em 70/70;
+- os replays da IX.9.3 e da IX.9.4 reproduzem os prompts salvos byte a byte, o que prova que o
+  prompt do LLM não mudou;
+- teste com respostas simuladas: resposta normal → satélite; raciocínio cortado →
+  `parse_failure`; decisão escrita só no raciocínio → `parse_failure`; 503 seguido de
+  resposta → retentativa e decisão.
+
+Houve também uma chamada real para confirmar que a Gemma aceita o modo JSON: ela aceita, e
+devolve o raciocínio em partes marcadas `thought`, separadas da resposta final.
+
+### X.3 Regra de corte das regras inéditas — fixada ANTES dos resultados
+
+- A Tabela IV reporta **10 sementes (0–9)** se, até **29/09/2026 às 12h00**, SLM (v3) e LLM
+  tiverem as dez sementes completas, cada uma com **no máximo 5% de `api_failure`**.
+- Caso contrário, reporta as **sementes 0–2**: o SLM v3 e o LLM da corrida antiga
+  (`heldout_lm`), confirmada pelo replay da IX.9.4.
+- A escolha depende de completar, nunca do resultado.
+- Métrica principal: conformidade operacional, como o simulador pontua. As falhas de
+  infraestrutura (API e parse) são reportadas à parte.
+- As sementes 1, 4 e 5 do LLM v2 tinham 17%, 7,5% e 23% de `api_failure`. Elas foram
+  arquivadas em `logs/archive/llm_v2_high_failure/` e rodam de novo.
+
+### X.4 A frase "re-validates the target" do artigo é falsa
+
+O artigo diz que o motor "parses [the JSON] and re-validates the target against the live
+fleet before committing". Nem o `LLMScheduler.decide` nem o `ai_logic._apply_decision`
+validam o satélite escolhido. O limiar de 20% só é usado no pré-filtro do LLM e nas
+heurísticas. O SLM v1 validava, pelo `_resolve_action`; o v3 não valida, como o LLM.
+
+**Impacto medido.** Um replay das decisões gravadas conferiu cada satélite escolhido contra
+a frota do momento. As 14 corridas do LLM foram idênticas ao gravado: canônica, antiga 0–2 e
+v2 0–9. Das 905 decisões que rotearam uma tarefa, **1** escolheu um satélite inválido: v2
+semente 9, tarefa 68 (ITAR), satélite 15 com 19,6% de bateria. O prompt arredonda a bateria,
+então o modelo viu "20%". Nas demais, nenhuma.
+
+**Decisão:** corrigir a frase do artigo, e não o simulador. Impor a recusa mudaria a física
+para todos os motores e exigiria novas rodadas, para um efeito de 1 em 905. Fica para a
+versão estendida.
+
+---
+
 ## Apêndice — Como verificar
 
 Tudo abaixo roda a partir do repositório, sem chave de API (exceto os motores remotos).

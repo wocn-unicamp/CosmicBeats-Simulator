@@ -52,6 +52,54 @@ def backoff_s(attempt: int, status: int | None = None) -> int:
     return min(120, 10 * 2 ** attempt)
 
 
+def build_prompt(task_dict, fleet):
+    """Prompt compartilhado, palavra por palavra, por LLM e SLM."""
+    fleet_lines = "\n".join(
+        f"  SAT {s['id']} | region={s['region']}"
+        f" | battery_pct={s['battery_pct']:.0f}%"
+        f" | solar_charging={s['solar_charging']}"
+        f" | ram_free={s['ram_free']} MB"
+        for s in fleet
+    )
+    return _PROMPT_TEMPLATE.format(
+        task_id=task_dict.get("id"),
+        region=task_dict.get("region", "?"),
+        ram=task_dict.get("ram", 0),
+        anomaly=task_dict.get("semantic_anomaly", "none"),
+        # Para uma restricao fora da lista de regras acima, esta frase e a
+        # unica informacao que o modelo recebe sobre o que ela exige.
+        constraint=("\n  constraint: " + task_dict["semantic_statement"]
+                    if task_dict.get("semantic_statement") else ""),
+        fleet_lines=fleet_lines,
+    )
+
+
+def parse_answer(raw):
+    """Le a resposta final do modelo. Devolve o dict decodificado, ou None.
+
+    Compartilhado por LLM e SLM: JSON direto (modo JSON ativo) e, se falhar, o
+    primeiro objeto JSON do texto. Recebe so a resposta final, nunca o raciocinio.
+    """
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        match = re.search(r'\{.*?\}', raw, re.DOTALL)
+        if not match:
+            return None
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError:
+            return None
+
+
+def response_meta(body):
+    """finishReason e tokens de raciocinio de uma resposta 200 (so para registro)."""
+    cand = (body.get("candidates") or [{}])[0]
+    usage = body.get("usageMetadata") or {}
+    return {"finish_reason": cand.get("finishReason", ""),
+            "thought_tokens": usage.get("thoughtsTokenCount", 0) or 0}
+
+
 class LLMScheduler:
     def __init__(self):
         if not API_KEY:
@@ -83,24 +131,7 @@ class LLMScheduler:
     # ------------------------------------------------------------------ #
 
     def _build_prompt(self, task_dict, fleet):
-        fleet_lines = "\n".join(
-            f"  SAT {s['id']} | region={s['region']}"
-            f" | battery_pct={s['battery_pct']:.0f}%"
-            f" | solar_charging={s['solar_charging']}"
-            f" | ram_free={s['ram_free']} MB"
-            for s in fleet
-        )
-        return _PROMPT_TEMPLATE.format(
-            task_id=task_dict.get("id"),
-            region=task_dict.get("region", "?"),
-            ram=task_dict.get("ram", 0),
-            anomaly=task_dict.get("semantic_anomaly", "none"),
-            # Para uma restricao fora da lista de regras acima, esta frase e a
-            # unica informacao que o modelo recebe sobre o que ela exige.
-            constraint=("\n  constraint: " + task_dict["semantic_statement"]
-                        if task_dict.get("semantic_statement") else ""),
-            fleet_lines=fleet_lines,
-        )
+        return build_prompt(task_dict, fleet)
 
     # ------------------------------------------------------------------ #
     # Chamada API                                                          #
@@ -128,7 +159,9 @@ class LLMScheduler:
                 latency_ms = (time.perf_counter() - t0) * 1000
                 if r.status_code == 200:
                     print(f"   [LLM] Resposta em {latency_ms:.0f}ms")
-                    return r.json()["candidates"][0]["content"]["parts"][0]["text"]
+                    body = r.json()
+                    self._last_meta = response_meta(body)
+                    return body["candidates"][0]["content"]["parts"][0]["text"]
                 elif r.status_code in TRANSIENT_HTTP:
                     wait = backoff_s(attempt, r.status_code)
                     print(f"   [LLM HTTP {r.status_code}] Tentativa {attempt+1}/{MAX_ATTEMPTS}"
@@ -169,22 +202,12 @@ class LLMScheduler:
             task_dict["decision_source"] = "api_failure"
             return None
 
-        try:
-            # JSON mode ativo para Flash-Lite — resposta já é JSON puro
-            parsed = json.loads(raw)
-        except json.JSONDecodeError:
-            # Fallback: extrai primeiro objeto JSON do texto livre
-            match = re.search(r'\{.*?\}', raw, re.DOTALL)
-            if not match:
-                print(f"   [LLM Parse Error] Nenhum JSON encontrado: {raw[:80]}")
-                task_dict["decision_source"] = "parse_failure"
-                return None
-            try:
-                parsed = json.loads(match.group())
-            except json.JSONDecodeError as e:
-                print(f"   [LLM Parse Error] JSON inválido: {e} | raw={raw[:80]}")
-                task_dict["decision_source"] = "parse_failure"
-                return None
+        task_dict.update(getattr(self, "_last_meta", {}))
+        parsed = parse_answer(raw)
+        if parsed is None:
+            print(f"   [LLM Parse Error] Nenhum JSON valido em: {raw[:80]}")
+            task_dict["decision_source"] = "parse_failure"
+            return None
 
         sat_id = parsed.get("satellite_id")
         reason = parsed.get("reason", "")

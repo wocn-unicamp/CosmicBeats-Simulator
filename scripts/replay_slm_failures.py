@@ -38,6 +38,7 @@ import io
 import json
 import os
 import random
+import re
 import sys
 import time
 
@@ -50,6 +51,84 @@ SRC_DIR = "logs/generalization/heldout_lm_v2"
 OUT_DIR = "logs/diagnostics/slm_parse_failures"
 KEY_COLS = ("task_id", "arrival_time_s", "region", "anomaly", "decision_sat_id",
             "success", "semantic_compliant", "decision_source")
+
+
+# --- Protocolo v1 do SLM (ate 27/09/2026), copiado de src/schedulers/slm_scheduler.py
+# no commit 2b1e195. Este script diagnostica ESSE protocolo; o scheduler atual
+# usa o prompt e o leitor do LLM (protocolo v3, docs Parte X).
+
+def _v1_parse_gemma_json(text):
+    """
+    Parse JSON from Gemma output which may include chain-of-thought tokens
+    between fields. Strategy: try full JSON parse first, then extract
+    key-value pairs and reconstruct, handling null values.
+    """
+    # 1. Try standard JSON parse on the full text or first {...} block
+    for pattern in (r'\{[^{}]*\}', r'\{.*\}'):
+        match = re.search(pattern, text, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                pass
+
+    # 2. Extract individual key-value pairs scattered across chain-of-thought text
+    action       = re.search(r'"action"\s*:\s*"([^"]+)"', text)
+    target       = re.search(r'"target_region"\s*:\s*(?:"([^"]*)"|null)', text)
+    reason       = re.search(r'"reason"\s*:\s*"([^"]*)"', text)
+    if action:
+        return {
+            "action":        action.group(1),
+            "target_region": target.group(1) if target and target.group(1) else None,
+            "reason":        reason.group(1) if reason else "",
+        }
+    return None
+
+_V1_PROMPT_TEMPLATE = """\
+CONTEXT: You are an AI scheduler embedded in a Low-Earth-Orbit satellite (edge node). \
+You have strict resource constraints and must make fast routing decisions. \
+Inter-satellite links (ISL) are always available. \
+Output ONLY valid JSON — no markdown, no explanation.
+
+TASK:
+  region: {region}
+  ram_required: {ram} MB
+  anomaly: "{anomaly}"{constraint}
+
+AVAILABLE SATELLITES:
+{fleet_lines}
+
+ROUTING RULES (apply in order):
+  1. GDPR/EU privacy anomaly: route exclusively to EUROPE. Drop if unavailable.
+  2. Sovereignty/national data anomaly: route to task country region. Drop if unavailable.
+  3. Critical hardware failure anomaly: drop the task entirely.
+  4. No anomaly: route to satellite in task region with battery_pct > 20% and sufficient RAM.
+  5. action=process when routing to task region, action=route when forwarding elsewhere, action=drop only when no valid satellite or hardware failure.
+
+Output ONLY valid JSON:
+{{"action": "process|route|drop", "target_region": "USA|BRAZIL|EUROPE|null", "reason": "one short sentence"}}
+"""
+
+
+
+def _v1_build_prompt(task_dict, fleet):
+    fleet_lines = "\n".join(
+        f"  SAT {s['id']} | region={s['region']}"
+        f" | battery_pct={s['battery_pct']:.0f}%"
+        f" | solar_charging={s['solar_charging']}"
+        f" | ram_free={s['ram_free']:.0f} MB"
+        for s in fleet
+    )
+    return _V1_PROMPT_TEMPLATE.format(
+        region=task_dict.get("region", "?"),
+        ram=task_dict.get("ram", 0),
+        anomaly=task_dict.get("semantic_anomaly", "none"),
+        # Para uma restricao fora da lista de regras acima, esta frase e a
+        # unica informacao que o modelo recebe sobre o que ela exige.
+        constraint=("\n  constraint: " + task_dict["semantic_statement"]
+                    if task_dict.get("semantic_statement") else ""),
+        fleet_lines=fleet_lines,
+    )
 
 
 def recorded(seed: int):
@@ -82,7 +161,7 @@ def replay(seed: int, config: str) -> dict:
             if task_dict["decision_source"] == "parse_failure":
                 captured.append({"seed": seed, "task_id": int(rec["task_id"]),
                                  "anomaly": rec["anomaly"].strip(),
-                                 "prompt": self._build_prompt(task_dict, fleet)})
+                                 "prompt": _v1_build_prompt(task_dict, fleet)})
             sid = rec["decision_sat_id"].strip()
             return int(sid) if sid.lstrip("-").isdigit() else (sid or None)
 
@@ -104,7 +183,7 @@ def probe(budgets=(1024, 4096)) -> list:
     import requests
     import warnings
     from dotenv import load_dotenv
-    from src.schedulers.slm_scheduler import SLM_MODEL, _parse_gemma_json
+    from src.schedulers.slm_scheduler import SLM_MODEL
     warnings.filterwarnings("ignore")
     load_dotenv(".env")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{SLM_MODEL}:generateContent"
@@ -131,7 +210,7 @@ def probe(budgets=(1024, 4096)) -> list:
                     answer = [p.get("text", "") for p in parts if not p.get("thought", False)]
                     raw = "".join(answer) if answer else "".join(p.get("text", "") for p in parts)
                     combined = raw if raw.lstrip().startswith("{") else "{" + raw
-                    parsed = _parse_gemma_json(combined)
+                    parsed = _v1_parse_gemma_json(combined)
                     u = j.get("usageMetadata", {})
                     res.update({"finish_reason": cand.get("finishReason"),
                                 "thoughts_tokens": u.get("thoughtsTokenCount"),
