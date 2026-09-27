@@ -1432,6 +1432,25 @@ propositais foram todas detectadas.
 **Falta, com o autor:** PDF eXpress → EDAS (o PDF gerado pelo eXpress) → eCF → inscrição
 até 30/09. Conferir também no kit do autor se o aviso de copyright vai na página 1.
 
+### X.7 Validação no IEEE PDF eXpress (27/09)
+
+O autor criou a conta no PDF eXpress (e-mail acadêmico + Conference ID do WPMC 2026) e
+enviou `paper/revised-camera-ready.pdf`. **Status: Pass.**
+
+O PDF certificado é `paper/2026352200.pdf` (metadado "Certified by IEEE PDFExpress at
+September 27, 2026 22:05:16"). Ele foi conferido contra o camera-ready final: texto extraído
+**idêntico** ao do build do commit `e4de793`, 6 páginas, Letter, PDF 1.7, todas as fontes
+embutidas, nenhuma Type 3. **É este arquivo, e não o original, que vai para o EDAS.** A pasta
+`paper/` fica fora do git de propósito, então o PDF certificado mora só nela.
+
+**Falta, com o autor, até 30/09:**
+1. enviar `paper/2026352200.pdf` ao EDAS, conferindo se título e autores do EDAS batem letra a
+   letra com o PDF;
+2. assinar o eCF no EDAS;
+3. fazer a inscrição "Author – Symposium Papers";
+4. conferir no kit do autor se o aviso de copyright vai na página 1. Se for preciso incluí-lo,
+   o PDF muda e precisa passar pelo PDF eXpress de novo.
+
 ---
 
 ## Apêndice — Como verificar
