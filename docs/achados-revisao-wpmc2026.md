@@ -1104,6 +1104,8 @@ Dados: `logs/diagnostics/llm_rule_replay/` (prompts e frota por tarefa, reprodu�
 
 ### IX.10 Estado ao encerrar a sessão de 23/09 e como retomar
 
+> **27/09/2026: o camera-ready final foi concluído. Veja a Parte X (X.6), que substitui este bloco quanto ao estado do artigo.**
+>
 > **ESTADO EM 24/09/2026, 16h30. COMECE POR AQUI (o bloco das 19h de 23/09, mais abaixo, é histórico).**
 >
 > **Camera-ready: pronto do lado dos dados e do texto.**
@@ -1374,6 +1376,61 @@ inéditas) foi para `logs/archive/slm_v3_prefix/`. **Todo o SLM v3 roda de novo 
 corrigido**, para que nenhuma retentativa tenha resgatado uma resposta mal formatada sem
 deixar rastro. O LLM não roda de novo: nenhuma resposta dele foi não-objeto, porque a
 corrida teria caído.
+
+### X.6 Resultados e artigo final (27/09, 15h30)
+
+**Regra de corte (X.3):** cumprida às 15h22 de 27/09, antes do prazo de 29/09. As dez
+sementes do SLM e do LLM ficaram completas, com no máximo 2,9% de `api_failure` por
+semente. Portanto, a Tabela IV reporta **10 sementes**.
+
+**SLM v3, corrida canônica (regras conhecidas):** 69/69 decisões do modelo, todas com
+`finish_reason` STOP; ACR 8/8, SCR 69/69. As decisões são **idênticas às do LLM** em todas as
+tarefas; antes eram 6/8 e 97,1%.
+
+**Regras inéditas, 10 sementes, 56 tarefas pareadas** (`scripts/table4_unseen.py`):
+
+| motor | conformes | % | região (42) | falha (14) | McNemar vs BASELINE |
+|---|---|---|---|---|---|
+| BASELINE | 15/56 | 26,8 | 15 | 0 | — |
+| ORACLE | 15/56 | 26,8 | 15 | 0 | 0/0 |
+| DRL | 15/56 | 26,8 | 1 | 14 | 14/14, p=1 |
+| DRL-OH | 14/56 | 25,0 | 10 | 4 | 7/8, p=1 |
+| SLM v3 | 51/56 | 91,1 | 37 | 14 | 38/2, p=1,5·10⁻⁹ |
+| LLM | 56/56 | 100 | 42 | 14 | 41/0, p=9,1·10⁻¹³ |
+
+- LLM vs SLM: 5/0 discordantes, **p = 0,0625**, ou seja, não separáveis.
+- **As 5 falhas do SLM são todas de formato**, e nenhuma é decisão errada: nas 51 tarefas que o
+  SLM respondeu no formato pedido, ele acertou todas.
+- Os 5 prompts foram reenviados por replay. Todas as respostas vêm em **lista**
+  (`[{...}]`), e cada uma aponta um satélite na região exigida. Pelo protocolo fixado
+  antes, contam como falha.
+- Nenhuma das 730 decisões do SLM v3 foi cortada pelo orçamento de tokens.
+
+**O que mudou na tese:** de "só o LLM generaliza" para "**modelos de linguagem**
+generalizam; regras enumeradas e DRL, não". Qual modelo de linguagem é usado não se distingue
+com estes dados.
+
+**Artigo (branch do camera-ready, commit `e4de793`, levado para a extended por merge):**
+- resumo, contribuições, Tabelas III e IV, V-D e conclusão com os números novos;
+- Fig. 2 com o prompt compartilhado;
+- frase do "re-validates" corrigida;
+- parágrafo do SLM com o protocolo v3;
+- limitações com o γ>0 preliminar e com o conhecimento prévio das regulamentações públicas.
+
+Continua com 6 páginas, fontes Type 1 embutidas, sem transparência. O PDF está em
+`paper/revised-camera-ready.pdf`, e o diff contra a versão submetida em
+`paper/camera-ready-diff.pdf`.
+
+**Verificador:** 63/63. Os testes negativos acharam três lacunas, que foram fechadas:
+- a mesma frase aparecia no resumo e na V-D, e a checagem aceitava qualquer uma das duas;
+- a Tabela III era checada por intervalo solto, e o intervalo do LLM mascarava o do SLM;
+- a RAM era checada sem o nome do motor, e SLM e LLM têm o mesmo valor.
+
+Agora a Tabela III é checada linha a linha e a RAM com o nome do motor. Nove adulterações
+propositais foram todas detectadas.
+
+**Falta, com o autor:** PDF eXpress → EDAS (o PDF gerado pelo eXpress) → eCF → inscrição
+até 30/09. Conferir também no kit do autor se o aviso de copyright vai na página 1.
 
 ---
 
