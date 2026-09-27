@@ -29,8 +29,12 @@ from analyze_results import (  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Sementes da coluna "regras ineditas" da Tabela IV do camera-ready.
-PAPER_HELDOUT_SEEDS = [0, 1, 2]
+# Sementes da coluna "regras ineditas" da Tabela IV do camera-ready. A regra de
+# corte fixada antes dos resultados (docs X.3) deu 10 sementes em 27/09.
+PAPER_HELDOUT_SEEDS = list(range(10))
+# Origem dos motores remotos nas ineditas: SLM no protocolo v3, LLM na campanha v2.
+HELDOUT_DIRS = {"SLM": "logs/generalization/heldout_slm_v3",
+                "LLM": "logs/generalization/heldout_lm_v2"}
 
 
 class Checker:
@@ -70,15 +74,28 @@ def check_single_run(c: Checker, logs_dir: str) -> None:
     src = f"{logs_dir}/mec_metrics_*.csv"
     comp = compliance_table(runs, keys)
 
-    for engine, data in comp.items():
-        for metric in ("scr", "acr"):
-            lo, hi = data[metric]["wilson"]
-            hi_s = "100" if hi >= 0.9999 else pct1(hi)
-            c.expect(f"IC Wilson {engine} {metric.upper()}",
-                     f"{pct1(lo)}--{hi_s}", src)
+    # LINHAS INTEIRAS da Tabela III, na ordem das colunas. Checar cada intervalo
+    # solto deixava passar um valor errado quando outro motor tinha o mesmo
+    # intervalo (teste negativo: ACR do SLM trocado passou com o do LLM).
+    order = ["BASELINE", "DRL", "SLM", "LLM"]
+    def cell(metric, e):
+        d = comp[e][metric]; lo, hi = d["wilson"]
+        val = "100" if d["k"] == d["n"] else pct1(d["k"] / d["n"])
+        hi_s = "100" if hi >= 0.9999 else pct1(hi)
+        return f"{val} {{\\tiny[{pct1(lo)}--{hi_s}]}}"
+    for metric, name in (("scr", "SCR (semantic compliance)"), ("acr", "ACR (anomaly compliance)")):
+        c.expect(f"Tabela III, linha {metric.upper()}",
+                 f"{name} & " + " & ".join(cell(metric, e) for e in order) + " \\\\", src)
+    n_tasks = {e: len(runs[e]) for e in order}
+    done = {e: sum(int(r["success"]) for r in runs[e].values()) for e in order}
+    c.expect("Tabela III, taxa de execucao", "Task execution rate & " + " & ".join(
+        f"{100 * done[e] / n_tasks[e]:.1f}\\%" for e in order) + " \\\\", src)
+    c.expect("Tabela III, taxa de descarte", "Drop rate & " + " & ".join(
+        f"{100 * (n_tasks[e] - done[e]) / n_tasks[e]:.1f}\\%" for e in order) + " \\\\", src)
 
-    expected_p = {("BASELINE", "LLM"): "0.031", ("DRL", "LLM"): "0.0625",
-                  ("DRL", "SLM"): "0.250", ("BASELINE", "DRL"): "1.000"}
+    expected_p = {("BASELINE", "LLM"): "0.031", ("BASELINE", "SLM"): "0.031",
+                  ("DRL", "LLM"): "0.0625", ("DRL", "SLM"): "0.0625",
+                  ("BASELINE", "DRL"): "1.000"}
     for r in pairwise_mcnemar(runs, keys, anomaly_only=True):
         key = tuple(sorted((r["a"], r["b"])))
         if key in expected_p:
@@ -93,8 +110,9 @@ def check_single_run(c: Checker, logs_dir: str) -> None:
     c.expect("mediana DRL", r"\SI{0.438}{\milli\second}", src)
     c.expect("mediana BASELINE", r"\SI{0.014}{\milli\second}", src)
 
+    # Com o nome do motor: SLM e LLM tem o mesmo valor, e sem o nome um mascarava o outro.
     for engine, v in ram_utilisation(runs, keys).items():
-        c.expect(f"RAM {engine}", f"{v['avg']:.1f}\\%", src)
+        c.expect(f"RAM {engine}", f"{engine} {v['avg']:.1f}\\%", src)
 
 
 def check_multiseed(c: Checker, logs_dir: str) -> None:
@@ -148,85 +166,90 @@ def check_generalization(c: Checker, repo: str) -> None:
     """Tabela de generalizacao (Secao V-D): conhecidas vs. ineditas.
 
     Coluna das ineditas recomputada sobre as tarefas pareadas entre os SEIS
-    motores (os deterministicos vivem em heldout/, os remotos em heldout_lm/).
-    E o pareamento que torna o McNemar valido, entao o n do texto tem de ser o
-    da intersecao, nao o de cada motor isolado.
+    motores. E o pareamento que torna o McNemar valido, entao o n do texto tem de
+    ser o da intersecao, nao o de cada motor isolado.
     """
     import csv as _csv
-    from analyze_results import mcnemar_exact, wilson_ci
+    from analyze_results import mcnemar_exact
     sys.path.insert(0, repo)
     from src import semantic_rules as sr
 
     engines = ["BASELINE", "ORACLE", "DRL", "DRL_ONEHOT", "SLM", "LLM"]
-    lm_dir = os.path.join(repo, "logs/generalization/heldout_lm")
     det_dir = os.path.join(repo, "logs/generalization/heldout")
-    if not os.path.isdir(lm_dir):
-        print("  (pulando generalizacao: sem dados de SLM/LLM nas ineditas)")
-        return
-    # As sementes que o ARTIGO usa, fixadas. Ler "tudo o que houver no diretorio"
-    # faria o resultado mudar sozinho quando a campanha da versao estendida
-    # depositar sementes novas — o mesmo erro que ja colapsou o pareamento uma vez.
+    # As sementes que o ARTIGO usa, fixadas: ler "tudo o que houver" faria o
+    # resultado mudar sozinho quando novas sementes chegassem.
     seeds = PAPER_HELDOUT_SEEDS
     data = {e: {} for e in engines}
     for s_ in seeds:
         for e in engines:
-            base = lm_dir if e in ("SLM", "LLM") else det_dir
+            base = os.path.join(repo, HELDOUT_DIRS[e]) if e in HELDOUT_DIRS else det_dir
             path = os.path.join(base, f"seed{s_}", f"mec_metrics_{e}.csv")
-            if not os.path.exists(path):
-                continue
             with open(path, newline="") as fh:
                 for r in _csv.DictReader(fh):
                     if r["anomaly"]:
-                        data[e][f"{s_}:{r['task_id']}"] = (int(r["semantic_compliant"]), r["anomaly"])
+                        data[e][f"{s_}:{r['task_id']}"] = (int(r["semantic_compliant"]), r["anomaly"],
+                                                         r.get("decision_source") or "model")
     keys = sorted(set.intersection(*[set(v) for v in data.values()]))
-    src = "logs/generalization/heldout{,_lm}/seed*/"
+    src = "logs/generalization/heldout{,_slm_v3,_lm_v2}/seed*/"
     n = len(keys)
+    k = {e: sum(data[e][x][0] for x in keys) for e in engines}
+    unseen = {e: 100 * k[e] / n for e in engines}
     c.expect("n pareado nas ineditas", f"$n={n}$, paired across all", src)
     c.expect("sementes das ineditas", f"Unseen: {len(seeds)} seeds", src)
-    unseen = {e: 100 * sum(data[e][x][0] for x in keys) / n for e in engines}
+    # A mesma frase aparece no resumo e na V-D; cada ocorrencia e checada com o
+    # proprio contexto, senao um valor errado numa delas passaria despercebido.
+    c.expect("resumo: LLM e SLM nas ineditas",
+             f"over {n} paired tasks the LLM keeps {k['LLM']}/{n} and the SLM {k['SLM']}/{n}", src)
+    c.expect("V-D: LLM e SLM nas ineditas",
+             f"stay high: the LLM keeps {k['LLM']}/{n} and the SLM {k['SLM']}/{n}", src)
+    c.expect("conclusao: LLM e SLM nas ineditas",
+             f"LLM stayed at {k['LLM']}/{n} and the SLM at {k['SLM']}/{n}", src)
+    c.expect("contribuicoes: SLM e LLM em %",
+             f"(SLM {unseen['SLM']:.0f}\\%, LLM {unseen['LLM']:.0f}\\%)", src)
+    others = max(unseen[e] for e in ("BASELINE", "ORACLE", "DRL", "DRL_ONEHOT"))
+    c.expect("teto dos motores sem linguagem", f"$\\leq${round(others)}\\%", src)
 
-    b01 = sum(1 for x in keys if data["LLM"][x][0] == 1 and data["BASELINE"][x][0] == 0)
-    b10 = sum(1 for x in keys if data["LLM"][x][0] == 0 and data["BASELINE"][x][0] == 1)
-    c.expect("McNemar LLM vs BASELINE (ineditas)", f"{b01}/{b10}", src)
-    assert mcnemar_exact(b01, b10) < 0.00015, mcnemar_exact(b01, b10)
-    c.expect("p do LLM nas ineditas", "$p=0.0001$", src)
+    def disc(a, b):
+        return (sum(1 for x in keys if data[a][x][0] == 1 and data[b][x][0] == 0),
+                sum(1 for x in keys if data[a][x][0] == 0 and data[b][x][0] == 1))
+    l01, l10 = disc("LLM", "BASELINE"); s01, s10 = disc("SLM", "BASELINE")
+    c.expect("McNemar LLM e SLM vs BASELINE", f"{l01}/{l10} and {s01}/{s10}", src)
+    assert max(mcnemar_exact(l01, l10), mcnemar_exact(s01, s10)) < 1e-8
+    c.expect("p dos modelos de linguagem nas ineditas", "both $p<10^{-8}$", src)
     oracle_disc = sum(1 for x in keys if data["ORACLE"][x][0] != data["BASELINE"][x][0])
     assert oracle_disc == 0, f"ORACLE deixou de ser identico ao BASELINE ({oracle_disc})"
     c.expect("ORACLE identico ao BASELINE", "0~discordant pairs", src)
+    d01, d10 = disc("DRL_ONEHOT", "BASELINE")
+    assert mcnemar_exact(d01, d10) > 0.05, "DRL-OH deixou de ser indistinguivel do BASELINE"
+    c.expect("DRL-OH vs BASELINE nas ineditas", f"{d01}/{d10} discordant pairs, $p=1.000$", src)
+    m01, m10 = disc("LLM", "SLM")
+    c.expect("LLM vs SLM", f"({m01}/{m10} discordant pairs, $p={mcnemar_exact(m01, m10):.4f}$)", src)
 
-    # Decomposicao: o texto afirma que, nas regras de REGIAO, DRL-OH e SLM
-    # resolvem 5 cada, contra 6 do BASELINE e 15 do LLM.
+    # Decomposicao por obrigacao: tarefas que exigem rotear para uma regiao.
     region = [x for x in keys if not sr.BY_TOKEN[data["BASELINE"][x][1]].must_drop]
     tot = {e: sum(data[e][x][0] for x in region) for e in engines}
-    words = {15: "fifteen", 11: "eleven", 14: "fourteen", 16: "sixteen"}
-    c.expect("n de tarefas de regiao", f"on the {words.get(len(region), len(region))} that", src)
-    c.expect("SLM nas de regiao", f"it solves {tot['SLM']}, against", src)
-    # DRL-OH volta ao nivel da heuristica nas ineditas: pares discordantes vs BASELINE.
-    d01 = sum(1 for x in keys if data["DRL_ONEHOT"][x][0] == 1 and data["BASELINE"][x][0] == 0)
-    d10 = sum(1 for x in keys if data["DRL_ONEHOT"][x][0] == 0 and data["BASELINE"][x][0] == 1)
-    assert mcnemar_exact(d01, d10) > 0.05, "DRL-OH deixou de ser indistinguivel do BASELINE"
-    c.expect("DRL-OH vs BASELINE nas ineditas", f"{d01}/{d10} discordant pairs", src)
-    slm_drop = sum(data["SLM"][x][0] for x in keys if x not in region)
-    assert slm_drop == len(keys) - len(region), "SLM deixou de descartar todas as falhas"
-    c.expect("BASELINE nas de regiao", f"heuristic's {tot['BASELINE']}", src)
-    c.expect("LLM nas de regiao", f"the LLM's {tot['LLM']}", src)
+    c.expect("decomposicao por regiao",
+             f"On the {len(region)} tasks that require routing to a specific region the "
+             f"heuristic solves {tot['BASELINE']}, the SLM {tot['SLM']} and the LLM {tot['LLM']}", src)
+    # Todo erro do SLM e falha de formato (X.6): nenhuma decisao do modelo errada.
+    slm_miss = [x for x in keys if data["SLM"][x][0] == 0]
+    assert all(data["SLM"][x][2] == "parse_failure" for x in slm_miss), "SLM errou por decisao"
+    words = {5: "five", 4: "four", 6: "six", 3: "three"}
+    c.expect("erros do SLM sao de formato", f"All {words.get(len(slm_miss), len(slm_miss))} SLM misses", src)
 
-    # Coluna das conhecidas: deterministicos em 20 sementes.
+    # Coluna das conhecidas: deterministicos em 20 sementes; SLM e LLM da canonica.
     import json as _json
     t20 = os.path.join(repo, "logs/generalization/table20.json")
     seen_tab = _json.load(open(t20))["splits"]["seen"]
     seen = {e: 100 * v["k"] / v["n"] for e, v in seen_tab["engines"].items()}
     lo, hi = seen_tab["engines"]["ORACLE"]["wilson"]
     c.expect("IC do ORACLE nas conhecidas", f"{100 * lo:.1f}--100", t20)
-    # SLM e LLM na coluna das conhecidas vem da corrida canonica (n=8, com adaga).
     canon = compliance_table(load_runs(os.path.join(repo, "logs")),
                              paired_keys(load_runs(os.path.join(repo, "logs"))))
     for e in ("SLM", "LLM"):
         a = canon[e]["acr"]; seen[e] = 100 * a["k"] / a["n"]
 
-    # LINHA INTEIRA de cada motor. Checar numeros soltos deixava passar uma tabela
-    # errada sempre que o mesmo valor aparecia na prosa — o teste negativo que
-    # reintroduziu o 50,0% antigo do DRL-OH na tabela passou despercebido assim.
+    # LINHA INTEIRA de cada motor (checar numeros soltos ja deixou passar uma tabela errada).
     label = {"BASELINE": "BASELINE", "ORACLE": "ORACLE", "DRL": "DRL",
              "DRL_ONEHOT": "DRL-OH", "SLM": "SLM", "LLM": "LLM"}
     for e in engines:
@@ -235,6 +258,43 @@ def check_generalization(c: Checker, repo: str) -> None:
         u = f"\\textbf{{{u}}}" if e == "LLM" else u
         c.expect(f"Tabela IV, linha {label[e]}",
                  f"{label[e]} & {seen[e]:.1f}\\%{dag} & {u} \\\\", src)
+
+
+def check_slm_protocol(c: Checker, repo: str) -> None:
+    """Protocolo v3 do SLM (docs X.2): nenhuma decisao cortada pelo orcamento."""
+    import csv as _csv, glob as _glob
+    paths = [os.path.join(repo, "logs/mec_metrics_SLM.csv")] + [
+        os.path.join(repo, HELDOUT_DIRS["SLM"], f"seed{s_}", "mec_metrics_SLM.csv")
+        for s_ in PAPER_HELDOUT_SEEDS]
+    rows = [r for p_ in paths for r in _csv.DictReader(open(p_, newline=""))]
+    assert all(r["finish_reason"] == "STOP" for r in rows), "alguma decisao do SLM foi cortada"
+    c.expect("decisoes do SLM, nenhuma cortada",
+             f"none of the {len(rows)} SLM decisions reported here was cut off",
+             "logs/mec_metrics_SLM.csv + heldout_slm_v3 (finish_reason)")
+
+
+def check_gamma(c: Checker, repo: str) -> None:
+    """Frase do gamma>0 nas limitacoes (decisoes 1 e 4 do orientador, docs X.1).
+
+    Fonte: frontier_seq.py --myopic-seeds 42 43 44, envelope conjunto (IX.9.1).
+    """
+    import json as _json
+    files = [os.path.join(repo, f"docs/frontier_l12_s{t}_pooled.json") for t in (42, 43, 44)]
+    runs = [_json.load(open(f)) for f in files]
+    def wkey(name):
+        return name.split("_w")[1].split("_l")[0]
+    replicated = {}
+    for run in runs:
+        for name, v in run["agents"].items():
+            replicated.setdefault(wkey(name), []).append(v["ci95"][0] > 0)
+    only = [w for w, flags in replicated.items() if len(flags) == 3 and all(flags)]
+    assert only == ["0p05"], f"pesos que replicam em 3/3: {only}"
+    gains = [next(v["gain_pp"] for n_, v in run["agents"].items() if wkey(n_) == "0p05") for run in runs]
+    src = "docs/frontier_l12_s4{2,3,4}_pooled.json"
+    c.expect("peso w do gamma>0", "throughput weight $w=0.05$", src)
+    c.expect("ganho do gamma>0 (min--max)", f"{min(gains):.1f}--{max(gains):.1f}~pp", src)
+    n_myopic = 3 * len(replicated)          # mesma grade de w nas duas familias
+    c.expect("tamanho do envelope miope", f"envelope of {n_myopic} myopic agents", src)
 
 
 def check_reviewer2_budgets(c: Checker) -> None:
@@ -312,6 +372,9 @@ def main() -> int:
     check_multiseed(c, args.multiseed_dir)
     print("verificando a tabela de generalizacao...")
     check_generalization(c, REPO)
+    print("verificando o protocolo do SLM e o gamma>0...")
+    check_slm_protocol(c, REPO)
+    check_gamma(c, REPO)
     print("verificando as respostas ao Revisor 2...")
     check_reviewer2_budgets(c)
     print("verificando os estados de bateria...")
