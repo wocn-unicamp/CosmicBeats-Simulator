@@ -1457,7 +1457,34 @@ venv/bin/python scripts/generalization_table.py --seeds 0-19 \
 # Campanha remota, resumível e limitada por cota diária.
 venv/bin/python scripts/run_experiments.py --seeds 0-19 --engines SLM LLM \
     --outdir logs/multiseed --max-api-runs N
+
+# --- Camera-ready final (Parte X) ---
+# Tabela IV: seis motores pareados nas regras inéditas (10 sementes; X.6).
+venv/bin/python scripts/table4_unseen.py --seeds 0-9
+
+# Campanhas que geraram o SLM v3 e refizeram o LLM (sementes 1, 4 e 5).
+bash scripts/run_camera_ready_v3.sh slm      # ou: llm
+
+# X.4: o satélite escolhido pelo LLM era válido? (replay, sem API)
+venv/bin/python scripts/check_llm_sat_validity.py \
+    logs/generalization/heldout_lm_v2/seed9/mec_metrics_LLM.csv 9 heldout
+
+# X.5 e X.6: reenvia o prompt exato de uma tarefa do SLM v3 e mostra a resposta
+# final (uma chamada de API). Ex.: semente 0, tarefa 32, a resposta em lista.
+venv/bin/python scripts/requery_slm_task.py 0 32
+
+# IX.9.3 e IX.9.4: diagnósticos do protocolo v1 do SLM e do "20/20" do LLM.
+venv/bin/python scripts/replay_slm_failures.py replay --seeds 0-9
+venv/bin/python scripts/replay_llm_rule_tasks.py replay --seeds 0-2
+
+# γ>0 com o envelope conjunto das três sementes de treino (IX.9.1).
+venv/bin/python scripts/frontier_seq.py --rate 12 --train-seed 42 --myopic-seeds 42 43 44
 ```
+
+**O verificador precisa de testes negativos.** Em 27/09, adulterações propositais no `.tex`
+acharam três lacunas: um valor aceito em qualquer uma de duas ocorrências, um intervalo de
+um motor mascarando o de outro, e a RAM checada sem o nome do motor. Depois de qualquer
+mudança no verificador, adultere um valor de cada tabela e confira que ele falha.
 
 A estatística é implementada sem dependências externas (`scipy` não estava disponível):
 Wilson, Clopper-Pearson por inversão da CDF binomial e McNemar exato. O Clopper-Pearson
