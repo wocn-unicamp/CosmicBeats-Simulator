@@ -1345,6 +1345,36 @@ então o modelo viu "20%". Nas demais, nenhuma.
 para todos os motores e exigiria novas rodadas, para um efeito de 1 em 905. Fica para a
 versão estendida.
 
+### X.5 Bug meu na primeira rodada do protocolo v3 — corrigido e rodado de novo
+
+Na semente 0 das regras inéditas, a tarefa 32 (LGPD) foi gravada como `api_failure`, mas com
+`finish_reason = STOP` e 442 tokens de raciocínio: a API tinha respondido. O prompt exato foi
+reconstruído por replay e reenviado. A resposta final foi
+`[{"satellite_id": 1, "reason": "... BRAZIL region."}]`, uma **lista** contendo o objeto, e
+não o objeto que o prompt pede.
+
+Duas falhas do meu código:
+1. `parse_answer` devolvia a lista, e o `.get` seguinte levantava exceção. No LLM isso teria
+   derrubado a corrida; nunca aconteceu nas 666 decisões dele.
+2. No SLM, o `except Exception` envolvia também a leitura da resposta. A exceção virou
+   "falha de conexão", com 6 retentativas, e a tarefa terminou como `api_failure`.
+
+**Correção** (commit antes da nova rodada):
+- `parse_answer` só aceita um **objeto** JSON; lista ou escalar é falha de formato
+  (`parse_failure`), sem retentativa, nos dois motores.
+- No SLM, o `except` cobre só rede e corpo ilegível.
+- Não "desembrulhar" a lista foi uma escolha deliberada: seria uma leniência criada depois de
+  ver o caso.
+
+O teste com respostas simuladas passou a cobrir 9 casos, incluindo a resposta em lista, a
+queda de rede e o HTTP 400.
+
+**Dados:** tudo o que o SLM v3 produziu antes da correção (a canônica e a semente 0 das
+inéditas) foi para `logs/archive/slm_v3_prefix/`. **Todo o SLM v3 roda de novo com o código
+corrigido**, para que nenhuma retentativa tenha resgatado uma resposta mal formatada sem
+deixar rastro. O LLM não roda de novo: nenhuma resposta dele foi não-objeto, porque a
+corrida teria caído.
+
 ---
 
 ## Apêndice — Como verificar

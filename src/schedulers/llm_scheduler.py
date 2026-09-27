@@ -79,17 +79,21 @@ def parse_answer(raw):
 
     Compartilhado por LLM e SLM: JSON direto (modo JSON ativo) e, se falhar, o
     primeiro objeto JSON do texto. Recebe so a resposta final, nunca o raciocinio.
+    So um OBJETO JSON e resposta valida (o formato que o prompt pede): uma lista ou
+    um escalar e falha de formato. Antes, uma lista derrubava o LLM e, no SLM, virava
+    api_failure com seis retentativas (docs X.5).
     """
     try:
-        return json.loads(raw)
+        parsed = json.loads(raw)
     except json.JSONDecodeError:
         match = re.search(r'\{.*?\}', raw, re.DOTALL)
         if not match:
             return None
         try:
-            return json.loads(match.group())
+            parsed = json.loads(match.group())
         except json.JSONDecodeError:
             return None
+    return parsed if isinstance(parsed, dict) else None
 
 
 def response_meta(body):

@@ -107,39 +107,42 @@ class SLMScheduler:
             },
         }
         for attempt in range(MAX_ATTEMPTS):
+            # So falha de rede ou corpo ilegivel conta como falha de API. Antes o
+            # except envolvia tambem a leitura da resposta, e um erro de formato do
+            # modelo virava api_failure com retentativas (docs X.5).
             try:
                 t0 = time.perf_counter()
                 r = requests.post(url, headers=headers, json=data, verify=False,
                                   timeout=REQUEST_TIMEOUT_S)
                 latencia_ms = (time.perf_counter() - t0) * 1000
-                if r.status_code == 200:
-                    body = r.json()
-                    task_dict.update(response_meta(body))
-                    parts = (body.get("candidates") or [{}])[0].get("content", {}).get("parts", [])
-                    # So a resposta final. Se o modelo nao chegou a responder (por
-                    # exemplo, raciocinio cortado pelo orcamento), e falha de parse:
-                    # o texto do raciocinio nunca vira decisao.
-                    raw = "".join(p.get("text", "") for p in parts if not p.get("thought", False))
-                    parsed = parse_answer(raw) if raw.strip() else None
-                    if parsed is None:
-                        print(f"   [SLM Parse Error] finish={task_dict.get('finish_reason')}"
-                              f" — sem JSON valido na resposta final: {raw[:80]!r}")
-                        self._last_failure = "parse_failure"
-                        return None
-                    print(f"   [SLM {SLM_MODEL} {latencia_ms:.0f}ms] satellite_id="
-                          f"{parsed.get('satellite_id')} reason={parsed.get('reason', '')}")
-                    return parsed
-                elif r.status_code in TRANSIENT_HTTP:
-                    wait = backoff_s(attempt, r.status_code)
-                    print(f"   [SLM HTTP {r.status_code}] Tentativa {attempt+1}/{MAX_ATTEMPTS}"
-                          f" — aguardando {wait}s")
-                    time.sleep(wait)
-                    continue
-                else:
-                    print(f"   [SLM Error] HTTP {r.status_code} — {r.text[:120]}")
-                    break
-            except Exception as e:
+                body = r.json() if r.status_code == 200 else None
+            except (requests.RequestException, ValueError) as e:
                 print(f"   [SLM Connection Error] {e}")
                 time.sleep(backoff_s(attempt))
                 continue
+            if r.status_code == 200:
+                task_dict.update(response_meta(body))
+                parts = (body.get("candidates") or [{}])[0].get("content", {}).get("parts", [])
+                # So a resposta final. Se o modelo nao chegou a responder (por
+                # exemplo, raciocinio cortado pelo orcamento), e falha de parse:
+                # o texto do raciocinio nunca vira decisao.
+                raw = "".join(p.get("text", "") for p in parts if not p.get("thought", False))
+                parsed = parse_answer(raw) if raw.strip() else None
+                if parsed is None:
+                    print(f"   [SLM Parse Error] finish={task_dict.get('finish_reason')}"
+                          f" — sem JSON valido na resposta final: {raw[:80]!r}")
+                    self._last_failure = "parse_failure"
+                    return None
+                print(f"   [SLM {SLM_MODEL} {latencia_ms:.0f}ms] satellite_id="
+                      f"{parsed.get('satellite_id')} reason={parsed.get('reason', '')}")
+                return parsed
+            elif r.status_code in TRANSIENT_HTTP:
+                wait = backoff_s(attempt, r.status_code)
+                print(f"   [SLM HTTP {r.status_code}] Tentativa {attempt+1}/{MAX_ATTEMPTS}"
+                      f" — aguardando {wait}s")
+                time.sleep(wait)
+                continue
+            else:
+                print(f"   [SLM Error] HTTP {r.status_code} — {r.text[:120]}")
+                break
         return None
