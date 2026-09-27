@@ -63,7 +63,9 @@ class MECOrchestrator:
         self.mec_satellites = []
         self.mec_tasks_dropped = 0
         self.next_task_time = -1.0
-        self.lambda_rate   = 4.0 / 60.0   # 4 tarefas/minuto
+        # Taxa de chegada Poisson em tarefas/min; 4 reproduz o artigo. Exposta para
+        # a varredura de carga do item 3.3 (em que ponto cada recurso passa a limitar).
+        self.lambda_rate   = float(os.environ.get("MEC_ARRIVAL_RATE", "4.0")) / 60.0
 
         # MEC_RULE_SPLIT: "seen" (padrão, reproduz o artigo), "heldout" (só
         # restrições inéditas) ou "all" (mistura as duas).
@@ -205,6 +207,14 @@ class MECOrchestrator:
             "success":            1 if decision_id is not None else 0,
             "semantic_compliant": 1 if compliant else 0,
             "engine":             self._engine,
+            # Origem da decisao: model | prefilter | api_failure | parse_failure.
+            # Motores locais sao sempre "model". Separa falha de infraestrutura de
+            # escolha do modelo — antes as duas viravam o mesmo DROP.
+            "decision_source":    task.get("decision_source", "model"),
+            # So para motores de API: por que o modelo parou (STOP, MAX_TOKENS...)
+            # e quantos tokens gastou raciocinando. Vazio nos motores locais.
+            "finish_reason":      task.get("finish_reason", ""),
+            "thought_tokens":     task.get("thought_tokens", ""),
         })
 
     # ------------------------------------------------------------------ #
@@ -351,6 +361,8 @@ class MECOrchestrator:
             "arrival_time_s", "decision_time_s", "latency_ms",
             "joules_cost", "decision_sat_id",
             "success", "semantic_compliant", "engine",
+            "decision_source",   # no fim, para nao deslocar as colunas existentes
+            "finish_reason", "thought_tokens",
         ]
         with open(csv_path, 'w', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)

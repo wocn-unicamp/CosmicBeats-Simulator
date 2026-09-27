@@ -1,0 +1,147 @@
+{
+  "runs": [
+    {
+      "seed": 0,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 4219.5,
+      "total_tasks": 69,
+      "finished_at": "2026-09-23T16:17:17",
+      "tail": null
+    },
+    {
+      "seed": 1,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 6986.2,
+      "total_tasks": 58,
+      "finished_at": "2026-09-23T18:13:43",
+      "tail": null
+    },
+    {
+      "seed": 2,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 4514.6,
+      "total_tasks": 71,
+      "finished_at": "2026-09-24T16:37:44",
+      "tail": null
+    },
+    {
+      "seed": 3,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1669.6,
+      "total_tasks": 61,
+      "finished_at": "2026-09-24T17:05:34",
+      "tail": null
+    },
+    {
+      "seed": 4,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 5290.6,
+      "total_tasks": 67,
+      "finished_at": "2026-09-24T18:33:44",
+      "tail": null
+    },
+    {
+      "seed": 5,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 80260.6,
+      "total_tasks": 66,
+      "finished_at": "2026-09-25T16:51:25",
+      "tail": null
+    },
+    {
+      "seed": 6,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1217.4,
+      "total_tasks": 60,
+      "finished_at": "2026-09-25T17:11:43",
+      "tail": null
+    },
+    {
+      "seed": 7,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1103.0,
+      "total_tasks": 78,
+      "finished_at": "2026-09-25T17:30:06",
+      "tail": null
+    },
+    {
+      "seed": 8,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1159.5,
+      "total_tasks": 67,
+      "finished_at": "2026-09-25T17:49:25",
+      "tail": null
+    },
+    {
+      "seed": 9,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1503.4,
+      "total_tasks": 69,
+      "finished_at": "2026-09-25T18:14:28",
+      "tail": null
+    },
+    {
+      "seed": 1,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 341.4,
+      "total_tasks": 58,
+      "finished_at": "2026-09-27T12:56:28",
+      "tail": null
+    },
+    {
+      "seed": 4,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 399.5,
+      "total_tasks": 67,
+      "finished_at": "2026-09-27T13:03:07",
+      "tail": null
+    },
+    {
+      "seed": 5,
+      "engine": "LLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 394.3,
+      "total_tasks": 66,
+      "finished_at": "2026-09-27T13:09:42",
+      "tail": null
+    }
+  ]
+}

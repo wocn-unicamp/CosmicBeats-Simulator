@@ -1,9 +1,10 @@
 import collections
 import os
-import json
-import re
 import time
 import requests
+
+from src.schedulers.llm_scheduler import (MAX_ATTEMPTS, TRANSIENT_HTTP, backoff_s,
+                                         build_prompt, parse_answer, response_meta)
 import urllib3
 from dotenv import load_dotenv
 
@@ -15,58 +16,15 @@ SLM_MODEL      = os.environ.get("SLM_MODEL", "gemma-4-26b-a4b-it")
 NPU_LATENCY_MS = float(os.environ.get("SLM_NPU_LATENCY_MS", "50.0"))
 RPM_LIMIT      = int(os.environ.get("SLM_RPM_LIMIT", "14"))  # conservative under the 15 RPM cap
 
-
-def _parse_gemma_json(text):
-    """
-    Parse JSON from Gemma output which may include chain-of-thought tokens
-    between fields. Strategy: try full JSON parse first, then extract
-    key-value pairs and reconstruct, handling null values.
-    """
-    # 1. Try standard JSON parse on the full text or first {...} block
-    for pattern in (r'\{[^{}]*\}', r'\{.*\}'):
-        match = re.search(pattern, text, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
-
-    # 2. Extract individual key-value pairs scattered across chain-of-thought text
-    action       = re.search(r'"action"\s*:\s*"([^"]+)"', text)
-    target       = re.search(r'"target_region"\s*:\s*(?:"([^"]*)"|null)', text)
-    reason       = re.search(r'"reason"\s*:\s*"([^"]*)"', text)
-    if action:
-        return {
-            "action":        action.group(1),
-            "target_region": target.group(1) if target and target.group(1) else None,
-            "reason":        reason.group(1) if reason else "",
-        }
-    return None
-
-_PROMPT_TEMPLATE = """\
-CONTEXT: You are an AI scheduler embedded in a Low-Earth-Orbit satellite (edge node). \
-You have strict resource constraints and must make fast routing decisions. \
-Inter-satellite links (ISL) are always available. \
-Output ONLY valid JSON — no markdown, no explanation.
-
-TASK:
-  region: {region}
-  ram_required: {ram} MB
-  anomaly: "{anomaly}"{constraint}
-
-AVAILABLE SATELLITES:
-{fleet_lines}
-
-ROUTING RULES (apply in order):
-  1. GDPR/EU privacy anomaly: route exclusively to EUROPE. Drop if unavailable.
-  2. Sovereignty/national data anomaly: route to task country region. Drop if unavailable.
-  3. Critical hardware failure anomaly: drop the task entirely.
-  4. No anomaly: route to satellite in task region with battery_pct > 20% and sufficient RAM.
-  5. action=process when routing to task region, action=route when forwarding elsewhere, action=drop only when no valid satellite or hardware failure.
-
-Output ONLY valid JSON:
-{{"action": "process|route|drop", "target_region": "USA|BRAZIL|EUROPE|null", "reason": "one short sentence"}}
-"""
+# Protocolo v3 (27/09/2026, docs Parte X). O SLM recebe o MESMO prompt do LLM e
+# responde no mesmo formato (satellite_id), lido pela mesma funcao. Unicas
+# diferencas, ambas por necessidade do modelo e nao por escolha de desenho:
+#  - a Gemma raciocina antes de responder, entao so as partes finais (sem
+#    "thought") sao lidas; o raciocinio nunca e usado como decisao;
+#  - o orcamento de saida precisa cobrir o raciocinio: 1024 tokens cortavam a
+#    resposta em 13 de 13 casos testados, e 4096 ainda cortou 2 (IX.9.3).
+MAX_OUTPUT_TOKENS = 8192
+REQUEST_TIMEOUT_S = 120   # raciocinio longo; o LLM, sem raciocinio, usa 60 s
 
 
 class SLMScheduler:
@@ -108,29 +66,13 @@ class SLMScheduler:
     def _decide_route(self, task_dict):
         fleet = task_dict.get("slm_fleet_snapshot", [])
         t0 = time.perf_counter()
-        api_result = self._call_gemini(task_dict, fleet)
-        result = self._resolve_action(api_result, fleet, task_dict) if api_result is not None else None
+        parsed = self._call_gemini(task_dict, fleet)
+        # Falha de API ou de parsing NAO e decisao do modelo: registrada a parte.
+        task_dict["decision_source"] = ("model" if parsed is not None
+                                        else getattr(self, "_last_failure", "api_failure"))
         task_dict["slm_wall_latency_ms"] = (time.perf_counter() - t0) * 1000
-        return result
-
-    def _build_prompt(self, task_dict, fleet):
-        fleet_lines = "\n".join(
-            f"  SAT {s['id']} | region={s['region']}"
-            f" | battery_pct={s['battery_pct']:.0f}%"
-            f" | solar_charging={s['solar_charging']}"
-            f" | ram_free={s['ram_free']:.0f} MB"
-            for s in fleet
-        )
-        return _PROMPT_TEMPLATE.format(
-            region=task_dict.get("region", "?"),
-            ram=task_dict.get("ram", 0),
-            anomaly=task_dict.get("semantic_anomaly", "none"),
-            # Para uma restricao fora da lista de regras acima, esta frase e a
-            # unica informacao que o modelo recebe sobre o que ela exige.
-            constraint=("\n  constraint: " + task_dict["semantic_statement"]
-                        if task_dict.get("semantic_statement") else ""),
-            fleet_lines=fleet_lines,
-        )
+        # Como no LLM: o satellite_id e devolvido tal como o modelo o deu.
+        return parsed.get("satellite_id") if parsed is not None else None
 
     def _rate_limit_wait(self):
         """Block until making another API call stays within RPM_LIMIT calls/minute."""
@@ -148,6 +90,8 @@ class SLMScheduler:
         self._call_timestamps.append(time.monotonic())
 
     def _call_gemini(self, task_dict, fleet):
+        """Devolve a resposta decodificada, ou None (com _last_failure indicando a causa)."""
+        self._last_failure = "api_failure"
         if not API_KEY:
             return None
         self._rate_limit_wait()
@@ -155,62 +99,50 @@ class SLMScheduler:
                f"{SLM_MODEL}:generateContent?key={API_KEY}")
         headers = {"Content-Type": "application/json"}
         data = {
-            "contents": [{"parts": [{"text": self._build_prompt(task_dict, fleet)}]}],
+            "contents": [{"parts": [{"text": build_prompt(task_dict, fleet)}]}],
             "generationConfig": {
                 "temperature": 0.0,
-                "maxOutputTokens": 1024,
+                "responseMimeType": "application/json",
+                "maxOutputTokens": MAX_OUTPUT_TOKENS,
             },
         }
-        for attempt in range(4):
+        for attempt in range(MAX_ATTEMPTS):
+            # So falha de rede ou corpo ilegivel conta como falha de API. Antes o
+            # except envolvia tambem a leitura da resposta, e um erro de formato do
+            # modelo virava api_failure com retentativas (docs X.5).
             try:
                 t0 = time.perf_counter()
-                r = requests.post(url, headers=headers, json=data, verify=False, timeout=30)
+                r = requests.post(url, headers=headers, json=data, verify=False,
+                                  timeout=REQUEST_TIMEOUT_S)
                 latencia_ms = (time.perf_counter() - t0) * 1000
-                if r.status_code == 200:
-                    parts = r.json()["candidates"][0]["content"].get("parts", [])
-                    # Gemma returns thinking and the final answer as separate parts
-                    # (each tagged "thought": true/false) — use the non-thought
-                    # parts; some thinking-heavy responses omit the flag on the
-                    # final part, so fall back to concatenating everything.
-                    answer_parts = [p.get("text", "") for p in parts if not p.get("thought", False)]
-                    raw = "".join(answer_parts) if answer_parts else "".join(p.get("text", "") for p in parts)
-                    combined = "{" + raw if not raw.lstrip().startswith("{") else raw
-                    result = _parse_gemma_json(combined)
-                    if result is None:
-                        print(f"   [SLM Parse Error] Tentativa {attempt+1}/4 — No JSON found in: {raw[:80]}")
-                        continue
-                    print(f"   [SLM {SLM_MODEL} {latencia_ms:.0f}ms] action={result.get('action')}"
-                          f" target={result.get('target_region')} reason={result.get('reason', '')}")
-                    return result
-                elif r.status_code == 429:
-                    wait = 30 * (attempt + 1)
-                    print(f"   [SLM Rate Limit] Tentativa {attempt+1}/4 — aguardando {wait}s")
-                    time.sleep(wait)
-                    continue
-                elif r.status_code == 500:
-                    wait = 10 * (attempt + 1)
-                    print(f"   [SLM Server Error 500] Tentativa {attempt+1}/4 — aguardando {wait}s")
-                    time.sleep(wait)
-                    continue
-                else:
-                    print(f"   [SLM Error] HTTP {r.status_code} — {r.text[:120]}")
-                    break
-            except Exception as e:
+                body = r.json() if r.status_code == 200 else None
+            except (requests.RequestException, ValueError) as e:
                 print(f"   [SLM Connection Error] {e}")
+                time.sleep(backoff_s(attempt))
                 continue
-        return None
-
-    def _resolve_action(self, api_result, fleet, task_dict):
-        action = api_result.get("action", "drop")
-        target_region = api_result.get("target_region")
-        if action == "drop":
-            return None
-        if action == "process":
-            target_region = task_dict.get("region")
-        if target_region:
-            for s in fleet:
-                if (s.get("region") == target_region
-                        and s.get("battery_pct", 100.0) > 20.0
-                        and s.get("ram_free", 0) >= task_dict.get("ram", 0)):
-                    return s.get("id")
+            if r.status_code == 200:
+                task_dict.update(response_meta(body))
+                parts = (body.get("candidates") or [{}])[0].get("content", {}).get("parts", [])
+                # So a resposta final. Se o modelo nao chegou a responder (por
+                # exemplo, raciocinio cortado pelo orcamento), e falha de parse:
+                # o texto do raciocinio nunca vira decisao.
+                raw = "".join(p.get("text", "") for p in parts if not p.get("thought", False))
+                parsed = parse_answer(raw) if raw.strip() else None
+                if parsed is None:
+                    print(f"   [SLM Parse Error] finish={task_dict.get('finish_reason')}"
+                          f" — sem JSON valido na resposta final: {raw[:80]!r}")
+                    self._last_failure = "parse_failure"
+                    return None
+                print(f"   [SLM {SLM_MODEL} {latencia_ms:.0f}ms] satellite_id="
+                      f"{parsed.get('satellite_id')} reason={parsed.get('reason', '')}")
+                return parsed
+            elif r.status_code in TRANSIENT_HTTP:
+                wait = backoff_s(attempt, r.status_code)
+                print(f"   [SLM HTTP {r.status_code}] Tentativa {attempt+1}/{MAX_ATTEMPTS}"
+                      f" — aguardando {wait}s")
+                time.sleep(wait)
+                continue
+            else:
+                print(f"   [SLM Error] HTTP {r.status_code} — {r.text[:120]}")
+                break
         return None

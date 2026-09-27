@@ -1,0 +1,114 @@
+{
+  "runs": [
+    {
+      "seed": 0,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 646.4,
+      "total_tasks": 69,
+      "finished_at": "2026-09-27T13:45:55",
+      "tail": null
+    },
+    {
+      "seed": 1,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 530.8,
+      "total_tasks": 57,
+      "finished_at": "2026-09-27T13:54:46",
+      "tail": null
+    },
+    {
+      "seed": 2,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 670.1,
+      "total_tasks": 70,
+      "finished_at": "2026-09-27T14:05:56",
+      "tail": null
+    },
+    {
+      "seed": 3,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 582.8,
+      "total_tasks": 61,
+      "finished_at": "2026-09-27T14:15:39",
+      "tail": null
+    },
+    {
+      "seed": 4,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 635.2,
+      "total_tasks": 67,
+      "finished_at": "2026-09-27T14:26:14",
+      "tail": null
+    },
+    {
+      "seed": 5,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 637.7,
+      "total_tasks": 65,
+      "finished_at": "2026-09-27T14:36:52",
+      "tail": null
+    },
+    {
+      "seed": 6,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 560.0,
+      "total_tasks": 59,
+      "finished_at": "2026-09-27T14:46:12",
+      "tail": null
+    },
+    {
+      "seed": 7,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 860.6,
+      "total_tasks": 78,
+      "finished_at": "2026-09-27T15:00:32",
+      "tail": null
+    },
+    {
+      "seed": 8,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 618.1,
+      "total_tasks": 66,
+      "finished_at": "2026-09-27T15:10:50",
+      "tail": null
+    },
+    {
+      "seed": 9,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 679.2,
+      "total_tasks": 69,
+      "finished_at": "2026-09-27T15:22:10",
+      "tail": null
+    }
+  ]
+}

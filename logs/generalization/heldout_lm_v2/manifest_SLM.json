@@ -1,0 +1,125 @@
+{
+  "runs": [
+    {
+      "seed": 0,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": false,
+      "returncode": -1,
+      "seconds": 3600.1,
+      "total_tasks": null,
+      "finished_at": "2026-09-23T12:05:41",
+      "tail": "timeout apos 3600s"
+    },
+    {
+      "seed": 0,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 3909.0,
+      "total_tasks": 69,
+      "finished_at": "2026-09-23T13:46:10",
+      "tail": null
+    },
+    {
+      "seed": 1,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1130.2,
+      "total_tasks": 57,
+      "finished_at": "2026-09-23T14:05:01",
+      "tail": null
+    },
+    {
+      "seed": 2,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1319.0,
+      "total_tasks": 70,
+      "finished_at": "2026-09-23T14:27:00",
+      "tail": null
+    },
+    {
+      "seed": 3,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1082.5,
+      "total_tasks": 61,
+      "finished_at": "2026-09-23T14:45:02",
+      "tail": null
+    },
+    {
+      "seed": 4,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 899.1,
+      "total_tasks": 67,
+      "finished_at": "2026-09-23T15:00:01",
+      "tail": null
+    },
+    {
+      "seed": 5,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1155.2,
+      "total_tasks": 65,
+      "finished_at": "2026-09-23T15:19:16",
+      "tail": null
+    },
+    {
+      "seed": 6,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 971.1,
+      "total_tasks": 59,
+      "finished_at": "2026-09-23T15:35:27",
+      "tail": null
+    },
+    {
+      "seed": 7,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1309.5,
+      "total_tasks": 78,
+      "finished_at": "2026-09-23T15:57:17",
+      "tail": null
+    },
+    {
+      "seed": 8,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1128.0,
+      "total_tasks": 66,
+      "finished_at": "2026-09-23T16:16:05",
+      "tail": null
+    },
+    {
+      "seed": 9,
+      "engine": "SLM",
+      "rule_split": "heldout",
+      "ok": true,
+      "returncode": 0,
+      "seconds": 1526.7,
+      "total_tasks": 69,
+      "finished_at": "2026-09-23T16:41:32",
+      "tail": null
+    }
+  ]
+}
