@@ -296,12 +296,14 @@ def logos(slide, x, y, w, h):
         box(slide, x, y, w, h, ["UNICAMP / IC logo", "(paper/slides/logos/)"], fill=None, line="BBBBBB",
             size=10, color="8A8A8A")
         return
+    from PIL import Image
     slot = w / len(files)
     for i, f in enumerate(files):
-        pic = slide.shapes.add_picture(f, Pt(x + i * slot), Pt(y), height=Pt(h))
-        if pic.width > Pt(slot - 6):           # cabe na faixa reservada
-            ratio = Pt(slot - 6) / pic.width
-            pic.width, pic.height = int(pic.width * ratio), int(pic.height * ratio)
+        iw, ih = Image.open(f).size
+        scale = min((slot - 8) / iw, h / ih)            # cabe na faixa, sem distorcer
+        pw, ph = iw * scale, ih * scale
+        slide.shapes.add_picture(f, Pt(x + i * slot + (slot - pw) / 2), Pt(y + (h - ph) / 2),
+                                 Pt(pw), Pt(ph))
 
 
 # ---------------------------------------------------------------------------
@@ -333,7 +335,7 @@ def build(N) -> Presentation:
     textbox(s, 60, 306, 420, 52, ["**WPMC 2026** — 29th International Symposium on",
                                   "Wireless Personal Multimedia Communications",
                                   "November 8–11, 2026 · Natal, Brazil"], 11, "333333", spacing=1)
-    logos(s, 480, 255, 160, 70)
+    logos(s, 470, 250, 180, 80)
     textbox(s, 655, 386, 50, 16, "1", 10, INK, align=PP_ALIGN.RIGHT)
     s.notes_slide.notes_text_frame.text = " ".join("""
 Good morning. This work compares four ways of orchestrating tasks on a low-Earth-orbit
@@ -842,7 +844,7 @@ are in the public repository on the slide. We are happy to take questions.""")
                                   "**Carlos A. Astudillo**: castudillo@unicamp.br"], 14, align=PP_ALIGN.CENTER, spacing=2)
     textbox(s, 60, 245, 600, 20, "Code and data: github.com/wocn-unicamp/CosmicBeats-Simulator", 12, MUTED,
             align=PP_ALIGN.CENTER)
-    logos(s, 280, 285, 160, 70)
+    logos(s, 270, 280, 180, 80)
 
     # ---------------------------------------------------------------- reserva
     # B1 — parametros
