@@ -75,7 +75,7 @@ def compute_numbers() -> dict:
         return b01, b10, mcnemar_exact(b01, b10)
     N["mc"] = {(a, b): disc(a, b, runs, anom) for a, b in
                (("LLM", "BASELINE"), ("SLM", "BASELINE"), ("LLM", "DRL"), ("SLM", "DRL"),
-                ("DRL", "BASELINE"), ("LLM", "SLM"))}
+                ("BASELINE", "DRL"), ("LLM", "SLM"))}
     lat = latency_stats(runs, keys)
     N["lat"] = lat
     N["window_s"] = 5.0 / (1 - math.exp(-5.0 * 4.0 / 60.0))
@@ -198,7 +198,11 @@ def rect(slide, x, y, w, h, fill=None, line=None, lw=1.0, shape=MSO_SHAPE.RECTAN
         s.line.color.rgb = rgb(line); s.line.width = Pt(lw)
     else:
         s.line.fill.background()
-    s.shadow.inherit = False
+    # Sem o estilo padrao do python-pptx: ele traz sombra e cores do tema, que a
+    # referencia nao tem. Preenchimento, contorno e cor do texto ja sao explicitos.
+    style = s._element.find(qn("p:style"))
+    if style is not None:
+        s._element.remove(style)
     if shape == MSO_SHAPE.ROUNDED_RECTANGLE:
         s.adjustments[0] = 0.08
     return s
@@ -326,7 +330,8 @@ def build(N) -> Presentation:
     textbox(s, 60, 248, 420, 22, "**Octávio B. Nascimento** and **Carlos A. Astudillo**", 14)
     textbox(s, 60, 270, 420, 32, ["Institute of Computing, University of Campinas (UNICAMP)",
                                   "Campinas, Brazil"], 11, "333333", spacing=1)
-    textbox(s, 60, 312, 420, 48, ["**WPMC 2026** — 29th Int. Symposium on Wireless Personal Multimedia Communications",
+    textbox(s, 60, 306, 420, 52, ["**WPMC 2026** — 29th International Symposium on",
+                                  "Wireless Personal Multimedia Communications",
                                   "November 8–11, 2026 · Natal, Brazil"], 11, "333333", spacing=1)
     logos(s, 480, 255, 160, 70)
     textbox(s, 655, 386, 50, 16, "1", 10, INK, align=PP_ALIGN.RIGHT)
@@ -583,7 +588,7 @@ a drop.""")
               " 4. No anomaly → task region, battery > 20%", "",
               "Output: {\"satellite_id\": <id or null>,",
               "         \"reason\": \"one short sentence\"}"]
-    box(s, 38, 84, 330, 288, prompt, fill="FFFFFF", line="BBBBBB", size=9.5, font=MONO_FONT,
+    box(s, 38, 84, 330, 288, prompt, fill="FFFFFF", line="BBBBBB", size=10.5, font=MONO_FONT,
         align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.TOP, rounded=False)
     bullets(s, 385, 90, 300, 280, [
         "**One prompt**, shared verbatim by SLM and LLM",
@@ -925,10 +930,10 @@ the SLM is the NPU benchmark, and that of the LLM is measured wall-clock.""")
               ["Median latency"] + [lat_s[e] for e in eng],
               ["Energy / decision*"] + ["0.001 J", "0.005 J", "0.100 J", "5.0 J"]],
           30, 84, 660, [124, 134, 134, 134, 134], row_h=28, size=11, bold_cols=(0,))
-    pairs = [("LLM", "BASELINE"), ("SLM", "BASELINE"), ("LLM", "DRL"), ("SLM", "DRL"), ("DRL", "BASELINE"), ("LLM", "SLM")]
+    pairs = [("LLM", "BASELINE"), ("SLM", "BASELINE"), ("LLM", "DRL"), ("SLM", "DRL"), ("BASELINE", "DRL"), ("LLM", "SLM")]
     table(s, [["Paired test (rule tasks)", "Discordant", "McNemar p"]] +
           [[f"{a} vs {b_}", f"{mc[(a, b_)][0]}/{mc[(a, b_)][1]}", pfmt(mc[(a, b_)][2])] for a, b_ in pairs],
-          30, 260 - 6, 400, [190, 100, 110], row_h=17, size=10)
+          30, 262, 400, [190, 100, 110], row_h=17, size=10)
     textbox(s, 450, 262, 240, 40, "*Declared model constants, not measurements", 10, MUTED)
     return prs
 

@@ -49,7 +49,7 @@ def setup_style() -> None:
     family = (["Golos Text", "DejaVu Sans"]
               if any("Golos" in f.name for f in font_manager.fontManager.ttflist) else ["DejaVu Sans"])
     plt.rcParams.update({
-        "font.family": family, "font.size": 13, "axes.facecolor": BG, "figure.facecolor": BG,
+        "font.family": family, "font.size": 11, "axes.facecolor": BG, "figure.facecolor": BG,
         "axes.edgecolor": "#6A6A6A", "axes.labelcolor": INK, "xtick.color": INK, "ytick.color": INK,
         "axes.spines.top": False, "axes.spines.right": False, "axes.titleweight": "regular",
         "savefig.facecolor": BG, "savefig.dpi": 220,
@@ -65,7 +65,7 @@ def fig_acr_canonical(out):
     runs = load_runs(os.path.join(REPO, "logs"))
     comp = compliance_table(runs, paired_keys(runs))
     engines = ["BASELINE", "DRL", "SLM", "LLM"]
-    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    fig, ax = plt.subplots(figsize=(385 / 72, 225 / 72))
     for i, e in enumerate(engines):
         a = comp[e]["acr"]
         p, yerr = err(a["k"], a["n"], a["wilson"])
@@ -73,13 +73,12 @@ def fig_acr_canonical(out):
         ax.bar(i, p, color=color, width=0.62, zorder=2)
         ax.errorbar(i, p, yerr=yerr, color=INK, capsize=6, lw=1.4, zorder=3)
         ax.text(i, 3, f"{a['k']}/{a['n']}", ha="center", va="bottom", color="white",
-                fontsize=14, fontweight="bold", zorder=4)
+                fontsize=12, fontweight="bold", zorder=4)
     ax.set_xticks(range(4), engines)
     ax.set_ylim(0, 105)
     ax.set_ylabel("Anomaly compliance, ACR (%)")
     ax.grid(axis="y", color="#E2E2E2", zorder=0)
-    ax.set_title("Canonical run: 69 tasks, 8 with a rule  ·  bars = Wilson 95% CI",
-                 fontsize=11.5, color="#555555")
+    ax.set_title("Canonical run · bars = Wilson 95% CI", fontsize=10.5, color="#555555")
     fig.tight_layout(); fig.savefig(os.path.join(out, "fig_acr_canonical.png")); plt.close(fig)
 
 
@@ -87,22 +86,22 @@ def fig_multiseed(out):
     runs = load_runs(os.path.join(REPO, "logs/multiseed"), ["BASELINE", "DRL"])
     keys = paired_keys(runs)
     comp = compliance_table(runs, keys)
-    fig, ax = plt.subplots(figsize=(6.4, 4.0))
+    fig, ax = plt.subplots(figsize=(345 / 72, 225 / 72))
     for i, e in enumerate(["BASELINE", "DRL"]):
         a = comp[e]["acr"]
         p, yerr = err(a["k"], a["n"], a["wilson"])
         ax.bar(i, p, color=GREY, width=0.55, zorder=2)
         ax.errorbar(i, p, yerr=yerr, color=INK, capsize=7, lw=1.4, zorder=3)
-        ax.text(i, p + yerr[1][0] + 1.5, f"{p:.1f}%", ha="center", fontsize=14, color=INK)
+        ax.text(i, p + yerr[1][0] + 1.5, f"{p:.1f}%", ha="center", fontsize=12, color=INK)
     ax.axhline(100 / 3, color=ACCENT, ls="--", lw=1.6, zorder=1)
-    ax.text(1.36, 100 / 3 + 1.0, "blind-policy\nbound = 1/3", color=ACCENT, ha="left", va="bottom", fontsize=12)
+    ax.text(1.36, 100 / 3 + 1.0, "blind-policy\nbound = 1/3", color=ACCENT, ha="left", va="bottom", fontsize=10.5)
     ax.set_xticks([0, 1], ["BASELINE", "DRL"])
     ax.set_xlim(-0.5, 1.95); ax.set_ylim(0, 50)
     ax.set_ylabel("ACR (%)")
     ax.grid(axis="y", color="#E2E2E2", zorder=0)
     seeds = len({k.split(":")[0] for k in keys})
-    ax.set_title(f"{seeds} seeds · {comp['BASELINE']['acr']['n']} rule-carrying tasks · Wilson 95% CI",
-                 fontsize=11.5, color="#555555")
+    ax.set_title(f"{seeds} seeds · {comp['BASELINE']['acr']['n']} rule tasks · Wilson 95% CI",
+                 fontsize=10.5, color="#555555")
     fig.tight_layout(); fig.savefig(os.path.join(out, "fig_multiseed.png")); plt.close(fig)
 
 
@@ -119,7 +118,7 @@ def fig_generalization(out):
             a = canon[e]["acr"]; seen[e] = (a["k"], a["n"], a["wilson"])
         else:
             v = t20["engines"][e]; seen[e] = (v["k"], v["n"], v["wilson"])
-    fig, ax = plt.subplots(figsize=(10.0, 4.4))
+    fig, ax = plt.subplots(figsize=(610 / 72, 265 / 72))
     w = 0.38
     for i, e in enumerate(engines):
         lm = e in ("SLM", "LLM")
@@ -133,12 +132,12 @@ def fig_generalization(out):
                label="Unseen rules" if i == 0 else None)
         ax.errorbar(i + w / 2, p2, yerr=yerr2, color=INK, capsize=3, lw=1, zorder=3)
         ax.text(i + w / 2, p2 + yerr2[1][0] + 2, f"{p2:.1f}%" if p2 < 100 else "100%",
-                ha="center", fontsize=12, color=INK, fontweight="bold" if lm else "normal")
-    ax.set_xticks(range(len(engines)), labels, fontsize=12)
+                ha="center", fontsize=11.5, color=INK, fontweight="bold" if lm else "normal")
+    ax.set_xticks(range(len(engines)), labels, fontsize=11)
     ax.set_ylim(0, 108); ax.set_yticks(range(0, 101, 25))
     ax.set_ylabel("Anomaly compliance (%)")
     ax.grid(axis="y", color="#E2E2E2", zorder=0)
-    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), frameon=False, fontsize=12, ncol=2)
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), frameon=False, fontsize=11, ncol=2)
     fig.tight_layout(); fig.savefig(os.path.join(out, "fig_generalization.png")); plt.close(fig)
 
 
@@ -150,7 +149,7 @@ def fig_latency(out):
     engines = ["BASELINE", "DRL", "SLM", "LLM"]
     notes = {"BASELINE": "conditional checks", "DRL": "MLP inference",
              "SLM": "NPU benchmark (modelled)", "LLM": "cloud round-trip (measured)"}
-    fig, ax = plt.subplots(figsize=(9.0, 3.6))
+    fig, ax = plt.subplots(figsize=(530 / 72, 210 / 72))
     for i, e in enumerate(engines):
         m = lat[e]["median"]
         lm = e in ("SLM", "LLM")
@@ -160,12 +159,12 @@ def fig_latency(out):
                         capsize=5, lw=1.2, zorder=3)
         label = f"{m:.3f} ms" if m < 1 else f"{m:.0f} ms"
         if m > 20:   # barra longa: texto dentro dela, para nao cruzar a linha da janela
-            ax.text(0.007, i, f"{label}  ·  {notes[e]}", va="center", fontsize=12, color="white")
+            ax.text(0.007, i, f"{label}  ·  {notes[e]}", va="center", fontsize=11, color="white")
         else:
-            ax.text(m * 1.6, i, f"{label}  ·  {notes[e]}", va="center", fontsize=12, color=INK)
+            ax.text(m * 1.6, i, f"{label}  ·  {notes[e]}", va="center", fontsize=11, color=INK)
     ax.axvline(window_ms, color=ACCENT, ls="--", lw=1.6)
     ax.text(window_ms / 1.15, -0.62, f"mean time between tasks: {window_ms / 1000:.1f} s",
-            color=ACCENT, ha="right", fontsize=12)
+            color=ACCENT, ha="right", fontsize=10.5)
     ax.set_xscale("log"); ax.set_xlim(0.005, 60000)
     ax.set_yticks(range(4), engines); ax.invert_yaxis()
     ax.set_xlabel("Median decision latency (ms, log scale)")
@@ -177,22 +176,22 @@ def fig_frontier(out):
     runs = {t: json.load(open(os.path.join(REPO, f"docs/frontier_l12_s{t}_pooled.json")))
             for t in (42, 43, 44)}
     hull = runs[42]["hull_g0"]
-    fig, ax = plt.subplots(figsize=(6.4, 4.2))
+    fig, ax = plt.subplots(figsize=(298 / 72, 285 / 72))
     hx, hy = zip(*hull)
-    ax.plot(hx, hy, "--", color=GREY, lw=2, label="best mix of 24 myopic agents (γ = 0)")
+    ax.plot(hx, hy, "--", color=GREY, lw=2, label="myopic envelope (24 agents, γ = 0)")
     markers = {42: "o", 43: "s", 44: "^"}
     for t, run in runs.items():
         for name, v in run["agents"].items():
             w005 = "_w0p05_" in name
             ax.plot(v["throughput"], v["acr"], markers[t], ms=9 if w005 else 6,
                     color=BLUE if w005 else BLUE_LIGHT, mec=INK if w005 else "none",
-                    label=(f"γ = 0.99, w = 0.05 (training seed {t})" if w005 else None))
+                    label=(f"γ = 0.99, w = 0.05 · seed {t}" if w005 else None))
     ax.set_xlim(55, 77); ax.set_ylim(82, 101)
-    ax.set_xlabel("Throughput (% of rule-free tasks executed)")
+    ax.set_xlabel("Throughput (%)")
     ax.set_ylabel("Anomaly compliance (%)")
     ax.grid(color="#E2E2E2")
-    ax.legend(loc="lower left", frameon=False, fontsize=10)
-    ax.set_title("Heavy battery load (12 tasks/min nominal)", fontsize=11.5, color="#555555")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.17), frameon=False, fontsize=10)
+    ax.set_title("Heavy battery load (12 tasks/min)", fontsize=10.5, color="#555555")
     fig.tight_layout(); fig.savefig(os.path.join(out, "fig_frontier.png")); plt.close(fig)
 
 
